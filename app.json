@@ -1,0 +1,7 @@
+{
+  "name": "Sudoku",
+  "description": "Plays Sudoku",
+  "keywords": [ "react", "reactjs", "sudoku" ],
+  "success_url": "/",
+}
+
