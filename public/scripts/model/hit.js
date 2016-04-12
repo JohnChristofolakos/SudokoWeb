@@ -127,7 +127,7 @@ Hit.prototype.toString = function() {
     s = s + q.getConstraint().getName() + " ";
     q = q.getRight();
   }
-  while (q !== this);
+  while (q !== this)  ;
   
   var k = 1;
   for (q = this.getConstraint().getHead().getDown(); q !== this; k++) {

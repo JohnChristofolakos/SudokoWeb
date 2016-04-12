@@ -49,10 +49,10 @@ describe("constraint", () => {
 
   it("has a parameter-checked constructor", () => {
     var notEnough = function() {
-      var c = new Constraint(new Hit(), "test", UnitTypes.BOX);
+      return new Constraint(new Hit(), "test", UnitTypes.BOX);
     };
     var tooMany = function() {
-      var c = Constraint(head, "test", UnitTypes.BOX, "unit", 1);
+      return new Constraint(new Hit(), "test", UnitTypes.BOX, "unit", 1);
     };
 
     expect(notEnough).toThrow();
@@ -120,68 +120,68 @@ describe("constraint", () => {
 
   it("can have hits linked to it", () => {
     var head = new Hit();
-  var constraint = new Constraint(head, "test", UnitTypes.BOX, "unit");
-  var h1 = new Hit();
-  var h2 = new Hit();
-  constraint.addHit(h1);
-  constraint.addHit(h2);
+    var constraint = new Constraint(head, "test", UnitTypes.BOX, "unit");
+    var h1 = new Hit();
+    var h2 = new Hit();
+    constraint.addHit(h1);
+    constraint.addHit(h2);
 
-  expect(constraint.getHead().getDown()).toBe(h1);
-  expect(constraint.getHead().getUp()).toBe(h2);
-  expect(constraint.getLength()).toBe(2);
+    expect(constraint.getHead().getDown()).toBe(h1);
+    expect(constraint.getHead().getUp()).toBe(h2);
+    expect(constraint.getLength()).toBe(2);
 
-  expect(h1.getConstraint()).toBe(constraint);
-  expect(h1.getUp()).toBe(constraint.getHead());
-  expect(h1.getDown()).toBe(h2);
+    expect(h1.getConstraint()).toBe(constraint);
+    expect(h1.getUp()).toBe(constraint.getHead());
+    expect(h1.getDown()).toBe(h2);
 
-  expect(h2.getConstraint()).toBe(constraint);
-  expect(h2.getUp()).toBe(h1);
-  expect(h2.getDown()).toBe(constraint.getHead());
+    expect(h2.getConstraint()).toBe(constraint);
+    expect(h2.getUp()).toBe(h1);
+    expect(h2.getDown()).toBe(constraint.getHead());
   });
 
   it("can have hits unlinked from it", () => {
     var head = new Hit();
-  var constraint = new Constraint(head, "test", UnitTypes.BOX, "unit");
-  var h1 = new Hit();
-  var h2 = new Hit();
-  constraint.addHit(h1);
-  constraint.addHit(h2);
-  constraint.unlinkHit(h1);
+    var constraint = new Constraint(head, "test", UnitTypes.BOX, "unit");
+    var h1 = new Hit();
+    var h2 = new Hit();
+    constraint.addHit(h1);
+    constraint.addHit(h2);
+    constraint.unlinkHit(h1);
 
-  expect(constraint.getHead().getDown()).toBe(h2);
-  expect(constraint.getHead().getUp()).toBe(h2);
-  expect(constraint.getLength()).toBe(1);
+    expect(constraint.getHead().getDown()).toBe(h2);
+    expect(constraint.getHead().getUp()).toBe(h2);
+    expect(constraint.getLength()).toBe(1);
 
-  expect(h1.getConstraint()).toBe(constraint);
-  expect(h1.getUp()).toBe(constraint.getHead());
-  expect(h1.getDown()).toBe(h2);
+    expect(h1.getConstraint()).toBe(constraint);
+    expect(h1.getUp()).toBe(constraint.getHead());
+    expect(h1.getDown()).toBe(h2);
 
-  expect(h2.getConstraint()).toBe(constraint);
-  expect(h2.getUp()).toBe(constraint.getHead());
-  expect(h2.getDown()).toBe(constraint.getHead());
+    expect(h2.getConstraint()).toBe(constraint);
+    expect(h2.getUp()).toBe(constraint.getHead());
+    expect(h2.getDown()).toBe(constraint.getHead());
   });
 
   it("can have hits relinked to it", () => {
     var head = new Hit();
-  var constraint = new Constraint(head, "test", UnitTypes.BOX, "unit");
-  var h1 = new Hit();
-  var h2 = new Hit();
-  constraint.addHit(h1);
-  constraint.addHit(h2);
-  constraint.unlinkHit(h1);
-  constraint.relinkHit(h1);
+    var constraint = new Constraint(head, "test", UnitTypes.BOX, "unit");
+    var h1 = new Hit();
+    var h2 = new Hit();
+    constraint.addHit(h1);
+    constraint.addHit(h2);
+    constraint.unlinkHit(h1);
+    constraint.relinkHit(h1);
 
-  expect(constraint.getHead().getDown()).toBe(h1);
-  expect(constraint.getHead().getUp()).toBe(h2);
-  expect(constraint.getLength()).toBe(2);
+    expect(constraint.getHead().getDown()).toBe(h1);
+    expect(constraint.getHead().getUp()).toBe(h2);
+    expect(constraint.getLength()).toBe(2);
 
-  expect(h1.getConstraint()).toBe(constraint);
-  expect(h1.getUp()).toBe(constraint.getHead());
-  expect(h1.getDown()).toBe(h2);
+    expect(h1.getConstraint()).toBe(constraint);
+    expect(h1.getUp()).toBe(constraint.getHead());
+    expect(h1.getDown()).toBe(h2);
 
-  expect(h2.getConstraint()).toBe(constraint);
-  expect(h2.getUp()).toBe(h1);
-  expect(h2.getDown()).toBe(constraint.getHead());
+    expect(h2.getConstraint()).toBe(constraint);
+    expect(h2.getUp()).toBe(h1);
+    expect(h2.getDown()).toBe(constraint.getHead());
   });
 
   it("can check if its hits are a subset of another constraint's hits", () => {

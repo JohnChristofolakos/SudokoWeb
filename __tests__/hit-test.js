@@ -18,12 +18,12 @@ describe("hit", () => {
   });
 
   it("has a copy constructor", () => {
-      var c = new Constraint(new Hit(), "test", UnitTypes.BOX, "unit");
-      var h1 = new Hit();
-      h1.addToConstraint(c);
-      
-      var h2 = new Hit(h1);
-      expect(h2.getConstraint()).toBe(h1.getConstraint());
+    var c = new Constraint(new Hit(), "test", UnitTypes.BOX, "unit");
+    var h1 = new Hit();
+    h1.addToConstraint(c);
+    
+    var h2 = new Hit(h1);
+    expect(h2.getConstraint()).toBe(h1.getConstraint());
   });
 
   it("has a scope-safe constructor", () => {
@@ -38,7 +38,7 @@ describe("hit", () => {
 
   it("has a parameter-checked constructor", () => {
     var tooMany = function() {
-      var hit = new Hit(1, 2);
+      return new Hit(1, 2);
     };
     expect(tooMany).toThrow();
   });
@@ -57,7 +57,6 @@ describe("hit", () => {
 
     // just for coverage
     var h = new Hit();
-    console.log(h.toString());
     expect(h.toString()).toBe("unlinked");
   });
 
@@ -76,7 +75,6 @@ describe("hit", () => {
 
     // just for coverage
     var h = new Hit();
-    console.log(h.getDisplayName());
     expect(h.getDisplayName()).toBe("??? in ???");
   });
 });

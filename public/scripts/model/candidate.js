@@ -21,6 +21,7 @@ var Candidate = function (row, col, digit, displayName) {
   this._row = row;
   this._col = col;
   this._digit = digit;
+  this._name = "r" + row + "c" + col + "d" + digit;
   this._displayName = displayName;
 
   // private mutable data
@@ -66,7 +67,7 @@ Candidate.prototype.getNum = function() {
 
 // Returns a concise name for the candidate, for logging
 Candidate.prototype.getName = function() {
-  return "r" + this.getRow() + "c" + this.getCol() + "d" + this.getDigit();
+  return this._name;
 };
 
 // Adds this candidate to the candidate list with the specified

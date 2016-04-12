@@ -1,8 +1,6 @@
 jest.disableAutomock();
 
-var UnitTypes = require("../public/scripts/constants/sudokuConst.js").sudokuUnitTypes;
 var Hit = require("../public/scripts/model/hit.js");
-var Constraint = require("../public/scripts/model/constraint.js");
 var Candidate = require("../public/scripts/model/candidate.js");
 var Puzzle = require("../public/scripts/model/puzzle.js");
 var puzzleSetup = require("../__tests__utils/puzzleSetup.js");
@@ -40,8 +38,8 @@ describe("puzzle", () => {
 
   it("has a parameter-checked constructor", () => {
     var tooMany = function() {
-      var p = new Puzzle(1);
-    }
+      return new Puzzle(1);
+    };
     expect(tooMany).toThrow();
   });
 
@@ -97,53 +95,53 @@ describe("puzzle", () => {
     var candidate = new Candidate(0, 0, 0, "root");
 
     function badParmToUnlinkCandidate() {
-      puzzle._unlinkCandidate(h);
-    };
+      puzzle._unlinkCandidate(hit);
+    }
     expect(badParmToUnlinkCandidate).toThrow();
 
     function badParmToRelinkCandidate() {
-      puzzle._relinkCandidate(h);
-    };
+      puzzle._relinkCandidate(hit);
+    }
     expect(badParmToRelinkCandidate).toThrow();
     
     function badParmToCover() {
       puzzle.cover(1, hit);
-    };
+    }
     expect(badParmToCover).toThrow();
     
     function badParmToUncover() {
       puzzle.uncover(hit);
-    };
+    }
     expect(badParmToUncover).toThrow();
     
     function badParmToCoverHitConstraints() {
       puzzle.coverHitConstraints(0, candidate);
-    };
+    }
     expect(badParmToCoverHitConstraints).toThrow();
     
     function badParmToUncoverHitConstraints() {
       puzzle.uncoverHitConstraints(candidate);
-    };
+    }
     expect(badParmToUncoverHitConstraints).toThrow();
     
     function badParmToEliminateCandidate() {
       puzzle.eliminateCandidate(candidate);   // yes, odd, to be refactored
-    };
+    }
     expect(badParmToEliminateCandidate).toThrow();
     
     function badParmToRestoreCandidate() {
       puzzle.restoreCandidate(candidate);     // also odd, to be refactored
-    };
+    }
     expect(badParmToRestoreCandidate).toThrow();
     
     function badParmToPushSolution() {
       puzzle.pushSolution(candidate);
-    };
+    }
     expect(badParmToPushSolution).toThrow();
     
     function badParmToSolve() {
       puzzle.solve(0, candidate);
-    };
+    }
     expect(badParmToSolve).toThrow();
   });
 
@@ -192,7 +190,7 @@ describe("puzzle", () => {
     // several constraints should now only have 1 possible candidate each
     constraints = puzzle.getActiveConstraints(1);
     expect(constraints.length).toBe(6);
-    var constraintNames = constraints.map(c => c.getName());
+    constraintNames = constraints.map(c => c.getName());
     expect(constraintNames).toContain("p01");
     expect(constraintNames).toContain("p10");
     expect(constraintNames).toContain("r02");

@@ -33,7 +33,7 @@ var puzzleSetup = {
     for (r = 0; r < rank; r++) {
       for (c = 0; c < rank; c++) {
         for (d = 1; d <= rank; d++) {
-          puzzle.addCandidate("r" + r + "c" + c + "d" + d,
+          puzzle.addCandidate(
               ["p" + r + c, "r" + r + d, "c" + c + d],
               r, c, d);
         }
@@ -82,7 +82,7 @@ var puzzleSetup = {
         for (d = 1; d <= rank*rank; d++) {
           var b = Math.floor(r / rank) * rank + Math.floor(c / rank);
 
-          puzzle.addCandidate("r" + r + "c" + c + "d" + d,
+          puzzle.addCandidate(
               ["p" + r + c, "r" + r + d, "c" + c + d, "b" + b + d],
               r, c, d);
         }

@@ -1,57 +1,49 @@
-var dispatcher = require("../dispatcher/sudokuDispatcher");
 var sudokuConst = require("../constants/sudokuConst");
 
 var ActionTypes = sudokuConst.sudokuActionTypes;
 
 module.exports = {
 
-  addCandidate: function(candidate) {
-    dispatcher.dispatch({
-      type: ActionTypes.ADD_CANDIDATE,
-      candidate: candidate
-    });
+  // these first three used only during puzzle setup
+
+  setPuzzle: function(puzzle) {
+    this.dispatch(ActionTypes.SET_PUZZLE, {puzzle: puzzle});
   },
 
-  removeCandidate: function(candidate) {
-    dispatcher.dispatch({
-      type: ActionTypes.REMOVE_CANDIDATE,
-      candidate: candidate
-    });
+  // the remainder are used during play/solving
+
+  removeCandidate: function(hit) {
+    this.dispatch(ActionTypes.REMOVE_CANDIDATE, {hit: hit});
   },
 
-  addHint: function(candidate) {
-    dispatcher.dispatch({
-      type: ActionTypes.ADD_HINT,
-      candidate: candidate
-    });
+  restoreCandidate: function(hit) {
+    this.dispatch(ActionTypes.RESTORE_CANDIDATE, {hit: hit});
   },
 
-  addSolution: function(candidate) {
-    dispatcher.dispatch({
-      type: ActionTypes.ADD_SOLUTION,
-      candidate: candidate
-    });
+  solveCell: function(hit) {
+    this.dispatch(ActionTypes.SOLVE_CELL, {hit: hit});
   },
 
-  removeSolution: function(candidate) {
-    dispatcher.dispatch({
-      type: ActionTypes.REMOVE_SOLUTION,
-      candidate: candidate
-    });
+  unsolve: function() {
+    this.dispatch(ActionTypes.UNSOLVE, {});
   },
 
-  highlightCell: function(row, col) {
-    dispatcher.dispatch({
-      type: ActionTypes.HIGHLIGHT_CELL,
+  removeSolution: function(hit) {
+    this.dispatch(ActionTypes.REMOVE_SOLUTION, {hit: hit});
+  },
+
+  highlightCell: function(row, col, color) {
+    this.dispatch(ActionTypes.HIGHLIGHT_CELL, {
       row: row,
-      col: col
+      col: col,
+      color: color
     });
   },
 
-  highlightCandidate: function(candidate) {
-    dispatcher.dispatch({
-      type: ActionTypes.HIGHLIGHT_CANDIDATE,
-      candidate: candidate
+  highlightCandidate: function(candidate, color) {
+    this.dispatch(ActionTypes.HIGHLIGHT_CANDIDATE, {
+      candidate: candidate,
+      color: color
     });
   }
 };

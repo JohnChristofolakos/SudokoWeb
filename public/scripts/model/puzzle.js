@@ -2,7 +2,6 @@ var Hit = require("./hit.js");
 var Candidate = require("./candidate.js");
 var Constraint = require("./constraint.js");
 var UnitTypes = require("../constants/sudokuConst.js").sudokuUnitTypes;
-var SudokuActions = require("../actions/sudokuActions.js");
 
 // Returns an object representing a Sudoku problem in set cover form.
 // After Donald E. Knuth, see
@@ -97,16 +96,16 @@ Puzzle.prototype.isSolved = function() {
   return this._constraintCount == 0;
 };
 
-// Returns a copy of the list of candidates that were initially
+// Returns the list of candidates that were initially
 // given as hints for the puzzle.
 Puzzle.prototype.getHints = function() {
-  return this._hints.slice(0);
+  return this._hints;
 };
 
-// Returns a copy of the list of candidates that are in
+// Returns the list of hits whose candidates that are in
 // the current solution
 Puzzle.prototype.getSolution = function() {
-  return this._solution.slice(0);
+  return this._solution;
 };
 
 // Returns a list of the currently active candidates
@@ -172,9 +171,6 @@ Puzzle.prototype._unlinkCandidate = function(c) {
 
   c.unlinkFromCandidateList();
   this._candidateCount--;
-
-  // notify the dispatcher
-  SudokuActions.removeCandidate(c);
 };
 
 // Relinks this candidate into the candidates list, and notifies the dispatcher
@@ -185,9 +181,6 @@ Puzzle.prototype._relinkCandidate = function(c) {
 
   c.relinkIntoCandidateList();
   this._candidateCount++;
-
-  // notify the dispatcher
-  SudokuActions.addCandidate(c);
 };
 
 /////////////// mutating routines used during solving - all are reversible
@@ -304,6 +297,10 @@ Puzzle.prototype.eliminateCandidate = function(hit) {
 // Needed if the logical solver is alternated with the backtracking
 // solver, in order to find chains, and to support undo.
 //
+// Note that the puzzle must be in the same state as when the candidate
+// was removed- i.e. this should only be used to support backtracking or
+// undo operations, not manually adding an arbitrary candidate.
+//
 // TODO refactor to take the candidate as parameter
 //
 Puzzle.prototype.restoreCandidate = function(hit) {
@@ -334,19 +331,12 @@ Puzzle.prototype.pushSolution = function(hit) {
   }
 
   this._solution.push(hit);
-
-  // notify the dispatcher
-  SudokuActions.addSolution(hit.getCandidate());
 };
 
 // Pops the last candidate off the solution list (during backtracking/undo)
 // and notifies the dispatcher
 Puzzle.prototype.popSolution = function() {
   var hit = this._solution.pop();
-
-  // notify the dispatcher
-  SudokuActions.removeSolution(hit.getCandidate());
-
   return hit;
 };
 
@@ -388,7 +378,7 @@ Puzzle.prototype.addConstraint = function(name, unitType, unitName) {
 
 // Adds a candidate to the puzzle during initial setup, returns the
 // new candidate instance.
-Puzzle.prototype.addCandidate = function(name, constraintNames,
+Puzzle.prototype.addCandidate = function(constraintNames,
           row, col, digit) {
   if (constraintNames === undefined || constraintNames === null) {
     throw new Error("constraintNames parameter may not be null");
@@ -427,9 +417,6 @@ Puzzle.prototype.addCandidate = function(name, constraintNames,
     throw new Error("Empty candidate");
   }
 
-  // notify the dispatcher
-  SudokuActions.addCandidate(candidate);
-
   return candidate;
 };
 
@@ -449,9 +436,6 @@ Puzzle.prototype.addHint = function(candidateName) {
       
   // remember the hints for printing later
   this._hints.push(candidate);
-
-  // notify the dispatcher
-  SudokuActions.addHint(candidate);
 
   return candidate;
 };

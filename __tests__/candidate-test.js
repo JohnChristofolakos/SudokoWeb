@@ -38,10 +38,10 @@ describe("candidate", () => {
 
   it("has a parameter-checked constructor", () => {
     var notEnough = function() {
-      var c = new Candidate(1, 2, 3);
+      return new Candidate(1, 2, 3);
     };
     var tooMany = function() {
-      var c = new Candidate(1, 2, 3, "3@A2", 5);
+      return new Candidate(1, 2, 3, "3@A2", 5);
     };
 
     expect(notEnough).toThrow();
@@ -66,7 +66,6 @@ describe("candidate", () => {
   });
 
   it("can be unlinked from a candidate list", () => {
-    var rootHead = new Hit();
     var rootCandidate = new Candidate(0, 0, 0, "root");
     var c1 = new Candidate(1, 2, 3, "3@A2");
     var c2 = new Candidate(4, 5, 6, "6@D5");
@@ -83,7 +82,6 @@ describe("candidate", () => {
   });
 
   it("can be relinked into a candidate list", () => {
-    var rootHead = new Hit();
     var rootCandidate = new Candidate(0, 0, 0, "root");
     var c1 = new Candidate(1, 2, 3, "3@A2");
     var c2 = new Candidate(4, 5, 6, "6@D5");

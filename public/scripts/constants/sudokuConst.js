@@ -1,10 +1,11 @@
 var keyMirror = require("keymirror");
 
 var sudokuActionTypes = keyMirror({
-  ADD_CANDIDATE: null,
+  SET_PUZZLE: null,
   REMOVE_CANDIDATE: null,
-  ADD_HINT: null,
-  ADD_SOLUTION: null,
+  RESTORE_CANDIDATE: null,
+  SOLVE_CELL: null,
+  UNSOLVE: null,
   REMOVE_SOLUTION: null,
   HIGHLIGHT_CELL: null,
   HIGHLIGHT_CANDIDATE: null
