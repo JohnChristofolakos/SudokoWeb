@@ -12,3 +12,7 @@ Major todos:
 * implement REST/JSON to retrieve puzzle from the server
 
 The project uses node, npm, React, babel with react and es2015 plugins, jest, CommonJS modularisation. My first significant JavaScript project so reviewers should please treat it kindly :)
+
+Here is a screenshot of a hinted grid.
+
+![Hinted grid](screenshot.png?raw=true)
