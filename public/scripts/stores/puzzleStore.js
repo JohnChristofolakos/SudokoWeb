@@ -1,5 +1,5 @@
 var Fluxxor = require("fluxxor");
-var { List, Map } = require("immutable");
+var { Map } = require("immutable");
 
 var { sudokuActionTypes } = require("../constants/sudokuConst.js");
 
@@ -9,6 +9,9 @@ var PuzzleStore = Fluxxor.createStore({
     this.candidates = Map();
     this.solution = Map();
     this.hints = Map();
+    this.cellRowSelected = 0;
+    this.cellColSelected = 0;
+    this.digitSelected = 0;
 
     this.bindActions(
       sudokuActionTypes.SET_PUZZLE, this.onSetPuzzle,
@@ -16,8 +19,11 @@ var PuzzleStore = Fluxxor.createStore({
       sudokuActionTypes.RESTORE_CANDIDATE, this.onRestoreCandidate,
       sudokuActionTypes.SOLVE_CELL, this.onSolveCell,
       sudokuActionTypes.UNSOLVE, this.onUnsolve,
-      sudokuActionTypes.HIGHLIGHT_CELL, this.onHighlightCell,
-      sudokuActionTypes.HIGHLIGHT_CANDIDATE, this.onHighlightCandidate
+
+      sudokuActionTypes.SELECT_CELL, this.onSelectCell,
+      sudokuActionTypes.UNSELECT_CELL, this.onUnselectCell,
+      sudokuActionTypes.SELECT_DIGIT, this.onSelectDigit,
+      sudokuActionTypes.UNSELECT_DIGIT, this.onUnselectDigit
     );
   },
 
@@ -25,7 +31,10 @@ var PuzzleStore = Fluxxor.createStore({
     return {
       candidates: this.candidates,
       solution: this.solution,
-      hints: this.hints
+      hints: this.hints,
+      cellRowSelected: this.cellRowSelected,
+      cellColSelected: this.cellColSelected,
+      digitSelected: this.digitSelected
     };
   },
 
@@ -73,6 +82,8 @@ var PuzzleStore = Fluxxor.createStore({
 
     this.candidates = Map(this.puzzle.getActiveCandidates()
         .map(c => { return [ c.getName(), c ]; } ));
+
+    this.emit("change");
   },
 
   onUnsolve: function() {
@@ -82,15 +93,36 @@ var PuzzleStore = Fluxxor.createStore({
 
     this.candidates = Map(this.puzzle.getActiveCandidates()
         .map(c => { return [ c.getName(), c ]; } ));
+
+    this.emit("change");
   },
 
-  onHighlightCell: function(payload) {
-      // TODO
+  onSelectCell: function(payload) {
+    this.cellRowSelected = payload.cellRowSelected;
+    this.cellColSelected = payload.cellColSelected;
+
+    this.emit("change");
   },
 
-  onHighlightCandidate: function(payload) {
-      // TODO
+  onUnselectCell: function() {
+    this.cellRowSelected = 0;
+    this.cellColSelected = 0;
+
+    this.emit("change");
+  },
+
+  onSelectDigit: function(payload) {
+    this.digitSelected = payload.didgt;
+
+    this.emit("change");
+  },
+
+  onUnselectDigit: function() {
+    this.digitSelected = 0;
+
+    this.emit("change");
   }
+
 });
 
 module.exports = PuzzleStore;

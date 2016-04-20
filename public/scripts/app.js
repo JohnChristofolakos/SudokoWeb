@@ -1,22 +1,24 @@
 var React = require("react");
 var ReactDOM = require("react-dom");
-var SudokuApp = require("./components/sudokuApp");
 var Fluxxor = require("fluxxor");
 
+var SudokuApp = require("./components/sudokuApp");
 var Puzzle = require("./model/puzzle.js");
 var PuzzleStore = require("./stores/puzzleStore.js");
-var sudokuActions = require("./actions/sudokuActions.js");
+var { PlayControllerStore } = require("./stores/playControllerStore.js");
 var PuzzleReader = require("./io/puzzleReader.js");
+
+var sudokuActions = require("./actions/sudokuActions.js");
 
 window.React = React;
 
 // setup flux
 var stores = {
-  PuzzleStore: new PuzzleStore()
+  PuzzleStore: new PuzzleStore(),
+  PlayControllerStore: new PlayControllerStore()
 };
 
 var flux = new Fluxxor.Flux(stores, sudokuActions);
-window.flux = flux;
 flux.on("dispatch", function(type, payload) {
   if (console && console.log) {
     console.log("[Dispatch]", type, payload);

@@ -17,7 +17,7 @@
 	font-size: 24px;
 }
 
-.gridSolved {
+.gridHinted {
 	font-size: 24px;
 	font-weight: bold;
 }
@@ -36,4 +36,7 @@
 
 .gridFrame {
 	position: relative;
+	width: 600px;
+	height: 600px;
+	float: left;
 }

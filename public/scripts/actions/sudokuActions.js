@@ -4,13 +4,11 @@ var ActionTypes = sudokuConst.sudokuActionTypes;
 
 module.exports = {
 
-  // these first three used only during puzzle setup
+  //////// grid content updates
 
   setPuzzle: function(puzzle) {
     this.dispatch(ActionTypes.SET_PUZZLE, {puzzle: puzzle});
   },
-
-  // the remainder are used during play/solving
 
   removeCandidate: function(hit) {
     this.dispatch(ActionTypes.REMOVE_CANDIDATE, {hit: hit});
@@ -32,18 +30,31 @@ module.exports = {
     this.dispatch(ActionTypes.REMOVE_SOLUTION, {hit: hit});
   },
 
-  highlightCell: function(row, col, color) {
-    this.dispatch(ActionTypes.HIGHLIGHT_CELL, {
-      row: row,
-      col: col,
-      color: color
+  //////// play controller updates
+
+  selectDigit: function(digit) {
+    this.dispatch(ActionTypes.HIGHLIGHT_DIGIT, {
+      digit: digit
     });
   },
 
-  highlightCandidate: function(candidate, color) {
-    this.dispatch(ActionTypes.HIGHLIGHT_CANDIDATE, {
-      candidate: candidate,
-      color: color
+  selectCell: function(row, col) {
+    this.dispatch(ActionTypes.SELECT_CELL, {
+      row: row,
+      col: col
+    });
+  },
+
+
+  setEntryMode: function(mode) {
+    this.dispatch(ActionTypes.SET_ENTRY_MODE, {
+      mode: mode
+    });
+  },
+
+  setDigitMode: function(mode) {
+    this.dispatch(ActionTypes.SET_DIGIT_MODE, {
+      mode: mode
     });
   }
 };

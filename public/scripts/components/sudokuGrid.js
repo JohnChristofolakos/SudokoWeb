@@ -67,8 +67,14 @@ var GridCell = React.createClass({
     col: React.PropTypes.number.isRequired,
     candidates: React.PropTypes.arrayOf(React.PropTypes.number).isRequired,
     solution: React.PropTypes.number.isRequired,
-    hint: React.PropTypes.number.isRequired
+    hint: React.PropTypes.number.isRequired,
+    onCellClicked: React.PropTypes.func.isRequired
   },
+
+  mixins: [
+    Fluxxor.FluxMixin(React)
+  ],
+
   render: function() {
     var style = {
       top: this.props.row * 65,
@@ -82,10 +88,16 @@ var GridCell = React.createClass({
           )
     ;
     return (
-      <div className="gridCell" style={style}>
+      <div className="gridCell" style={style}
+          onClick={this.onCellClicked}>
         {elem}
       </div>
     );
+  },
+
+  onCellClicked: function() {
+    console.log("Cell clicked, row: " + this.props.row + ", col: " + this.props.col);
+    this.props.onCellClicked(this.props.row, this.props.col);
   }
 });
 
@@ -94,8 +106,10 @@ var GridFrame = React.createClass({
   propTypes: {
     candidates: React.PropTypes.object.isRequired,
     solution: React.PropTypes.object.isRequired,
-    hints: React.PropTypes.object.isRequired
+    hints: React.PropTypes.object.isRequired,
+    onCellClicked: React.PropTypes.func.isRequired
   },
+
   render: function() {
     var cellProps = [];
     for (var row = 0; row < 9; row++) {
@@ -132,6 +146,7 @@ var GridFrame = React.createClass({
             candidates={cellProps[row][col].candidates}
             solution={cellProps[row][col].solution}
             hint={cellProps[row][col].hint}
+            onCellClicked={this.props.onCellClicked}
             />);
       }
     }
@@ -142,6 +157,10 @@ var GridFrame = React.createClass({
 });
 
 var SudokuGrid = React.createClass({
+  propTypes: {
+    onCellClicked: React.PropTypes.func.isRequired
+  },
+
   mixins: [
     Fluxxor.FluxMixin(React),
     Fluxxor.StoreWatchMixin("PuzzleStore")
@@ -159,13 +178,12 @@ var SudokuGrid = React.createClass({
 
   render: function() {
     return (
-      <div>
-        <GridFrame
-          candidates={this.state.candidates}
-          solution={this.state.solution}
-          hints={this.state.hints}
-        />
-      </div>
+      <GridFrame
+        candidates={this.state.candidates}
+        solution={this.state.solution}
+        hints={this.state.hints}
+        onCellClicked={this.props.onCellClicked}
+      />
     );
   }
 });

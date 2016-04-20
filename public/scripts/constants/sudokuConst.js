@@ -1,14 +1,21 @@
 var keyMirror = require("keymirror");
 
 var sudokuActionTypes = keyMirror({
+  // grid content updates
   SET_PUZZLE: null,
   REMOVE_CANDIDATE: null,
   RESTORE_CANDIDATE: null,
   SOLVE_CELL: null,
   UNSOLVE: null,
   REMOVE_SOLUTION: null,
-  HIGHLIGHT_CELL: null,
-  HIGHLIGHT_CANDIDATE: null
+  
+  // play controller updates
+  SELECT_CELL: null,
+  UNSELECT_CELL: null,
+  SELECT_DIGIT: null,
+  UNSELECT_DIGIT: null,
+  SET_ENTRY_MODE: null,
+  SET_DIGIT_MODE: null
 });
 
 var sudokuUnitTypes = keyMirror({
