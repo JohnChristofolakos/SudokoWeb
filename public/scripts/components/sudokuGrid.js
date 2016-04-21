@@ -1,5 +1,6 @@
 var React = require("react");
 var Fluxxor = require("fluxxor");
+var viewConst = require("../constants/sudokuConst.js").sudokuViewConst;
 
 // component to render a single candidate
 var GridCandidate = React.createClass({
@@ -76,10 +77,20 @@ var GridCell = React.createClass({
   ],
 
   render: function() {
+    var shadow = "0px 0px 5px 2px rgba(198, 194, 153, 0.75)";
+
     var style = {
-      top: this.props.row * 65,
-      left: this.props.col * 65
+      top: this.props.row * (viewConst.GRID_CELL_SIZE + viewConst.GRID_CELL_SPACING) +
+           Math.floor(this.props.row / 3) * viewConst.GRID_UNIT_SPACING,
+      left: this.props.col * (viewConst.GRID_CELL_SIZE + viewConst.GRID_CELL_SPACING) +
+           Math.floor(this.props.col / 3) * viewConst.GRID_UNIT_SPACING,
+      width: viewConst.GRID_CELL_SIZE,
+      height: viewConst.GRID_CELL_SIZE,
+      boxShadow: shadow,
+      WebkitBoxShadow: shadow,
+      MozBoxShadow: shadow
     };
+
     var elem = this.props.solution != 0
         ? <GridSolved solution={this.props.solution} />
         : (this.props.hint != 0
@@ -87,6 +98,7 @@ var GridCell = React.createClass({
           : <GridCandidatesLayer candidates={this.props.candidates} />
           )
     ;
+
     return (
       <div className="gridCell" style={style}
           onClick={this.onCellClicked}>
@@ -147,11 +159,19 @@ var GridFrame = React.createClass({
             solution={cellProps[row][col].solution}
             hint={cellProps[row][col].hint}
             onCellClicked={this.props.onCellClicked}
-            />);
+          />);
       }
     }
+
+    var style = {
+      width: viewConst.GRID_SIZE(),
+      height: viewConst.GRID_SIZE()
+    };
+
     return (
-      <div className="gridFrame">{cells}</div>
+      <div className="gridFrame" style={style}>
+        {cells}
+      </div>
     );
   }
 });

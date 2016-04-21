@@ -27,16 +27,13 @@
 }
 
 .gridCell {
-	width: 60px;
-	height: 60px;
-	position:absolute;
+	position: absolute;
     background-color: #EEE8AA;
-    border-radius: 12px;
+    border-radius: 20%;
+	font-family: 'Roboto', sans-serif;
 }
 
 .gridFrame {
 	position: relative;
-	width: 600px;
-	height: 600px;
 	float: left;
 }

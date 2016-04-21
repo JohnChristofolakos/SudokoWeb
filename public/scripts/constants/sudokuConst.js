@@ -48,12 +48,20 @@ sudokuUnitNames[sudokuUnitTypes.BOX] =
     namePlural: "boxes"
   };
 
+var sudokuViewConst = {
+  GRID_CELL_SIZE: 60,
+  GRID_CELL_SPACING: 8,
+  GRID_UNIT_SPACING: 5,
+  GRID_SIZE: function() {
+    return (sudokuViewConst.GRID_CELL_SIZE * 9) +
+           (sudokuViewConst.GRID_CELL_SPACING * 8) +
+           (sudokuViewConst.GRID_UNIT_SPACING * 2);
+  }
+};
+
 module.exports = {
-
   sudokuActionTypes: sudokuActionTypes,
-
   sudokuUnitTypes: sudokuUnitTypes,
-
-  sudokuUnitNames: sudokuUnitNames
-
+  sudokuUnitNames: sudokuUnitNames,
+  sudokuViewConst: sudokuViewConst
 };
