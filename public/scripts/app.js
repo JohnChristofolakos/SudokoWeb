@@ -25,6 +25,8 @@ flux.on("dispatch", function(type, payload) {
   }
 });
 
+stores.PlayControllerStore.setFlux(flux);
+
 // build the puzzle
 function lineReader(rowNum) {
   var lines = [

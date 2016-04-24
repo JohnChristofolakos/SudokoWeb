@@ -57,6 +57,9 @@ var Puzzle = function() {
   // The row and column chosen on each level as a (possibly tentative) solution,
   // the elements are instances of Hit.
   this._solution = [];
+
+  // These are the Candidates eliminated by the logical solver or the user
+  this._eliminated = [];
 };
 
 /////////////// getters
@@ -96,16 +99,15 @@ Puzzle.prototype.isSolved = function() {
   return this._constraintCount == 0;
 };
 
-// Returns the list of candidates that were initially
-// given as hints for the puzzle.
+// Returns the list of candidates that were initially given as hints for
+// the puzzle.
 Puzzle.prototype.getHints = function() {
-  return this._hints;
+  return this._hints.slice();
 };
 
-// Returns the list of hits whose candidates that are in
-// the current solution
+// Returns the list of hits whose candidates are in the current solution
 Puzzle.prototype.getSolution = function() {
-  return this._solution;
+  return this._solution.slice();
 };
 
 // Returns a list of the currently active candidates
@@ -137,6 +139,11 @@ Puzzle.prototype.getActiveConstraints = function(lenFilter) {
   return list;
 };
 
+// Returns a list of the eliminated candidates
+Puzzle.prototype.getEliminatedCandidates = function() {
+  return this._eliminated.slice();
+};
+
 // Returns the constraint with the given name, or undefined.
 Puzzle.prototype.findConstraint = function(name) {
   for (var c = this.getRootConstraint().getNext();
@@ -149,21 +156,52 @@ Puzzle.prototype.findConstraint = function(name) {
   return undefined;
 };
 
-// Returns the candidate with the given name, or undefined.
+// Returns the candidate with the given name, or with the given row, column
+// and digit. Returns undefined if there is no such active candidate.
 Puzzle.prototype.findCandidate = function(name) {
-  for (var c = this.getRootCandidate().getNext();
-           c !== this.getRootCandidate();
-           c = c.getNext()) {
-    if (c.getName() === name) {
-      return c;
+  // support calling with row, col, digit as arguments
+  if (arguments.length === 3) {
+    var row = arguments[0], col = arguments[1], digit = arguments[2];
+
+    for (var c = this.getRootCandidate().getNext();
+             c !== this.getRootCandidate();
+             c = c.getNext()) {
+      if (c.getRow() === row && c.getCol() === col && c.getDigit() === digit) {
+        return c;
+      }
+    }
+  }
+  else {
+    for (c = this.getRootCandidate().getNext();
+             c !== this.getRootCandidate();
+             c = c.getNext()) {
+      if (c.getName() === name) {
+        return c;
+      }
     }
   }
   return undefined;
 };
 
+// Returns the eliminated candidate with the given name, or with the given
+// row, column and digit. Returns undefined if there is no such eliminated candidate.
+Puzzle.prototype.findEliminatedCandidate = function(name) {
+  // support calling with row, col, digit as arguments
+  if (arguments.length === 3) {
+    var row = arguments[0], col = arguments[1], digit = arguments[2];
+
+    return this._eliminated.find(c => c.getRow() === row &&
+                                      c.getCol() === col &&
+                                      c.getDigit() === digit);
+  }
+  else {
+    return this._eliminated.find(c => c.getName() === name);
+  }
+};
+
 ////////////////// private for use by the mutating routines below
 
-// Unlinks this candidate from the candidates list, and notifies the dispatcher
+// Unlinks this candidate from the candidates list
 Puzzle.prototype._unlinkCandidate = function(c) {
   if (c.constructor !== Candidate) {
     throw new Error("Puzzle.unlinkCandidate: parameter should be Candidate");
@@ -173,7 +211,7 @@ Puzzle.prototype._unlinkCandidate = function(c) {
   this._candidateCount--;
 };
 
-// Relinks this candidate into the candidates list, and notifies the dispatcher
+// Relinks this candidate into the candidates list
 Puzzle.prototype._relinkCandidate = function(c) {
   if (c.constructor !== Candidate) {
     throw new Error("Puzzle.unlinkCandidate: parameter should be Candidate");
@@ -194,8 +232,7 @@ Puzzle.prototype.cover = function(level, constraint) {
   if (constraint.constructor !== Constraint) {
     throw new Error("Puzzle.cover: parameter should be Constraint");
   }
-  var k = 1;
-  
+
   // unlink the constraint from the constraint list
   constraint.unlinkFromConstraintList();
   this._constraintCount--;
@@ -209,13 +246,11 @@ Puzzle.prototype.cover = function(level, constraint) {
     for (var h = c.getRight(); h !== c; h = h.getRight()) {
       // unlink the hit from its constraint, and bump the update count
       h.getConstraint().unlinkHit(h);
-      k++;
     }
     
     // remove the candidate from the candidates list
     this._unlinkCandidate(c.getCandidate());
   }
-  return k;
 };
 
 // "Uncovering is done in precisely the reverse order. The pointers thereby
@@ -226,7 +261,7 @@ Puzzle.prototype.uncover = function(constraint) {
     throw new Error("Puzzle.uncover: parameter should be Constraint");
   }
   for (var c = constraint.getHead().getUp();
-       c != constraint.getHead();
+       c !== constraint.getHead();
        c = c.getUp()) {
     for (var h = c.getLeft(); h != c; h = h.getLeft()) {
       h.getConstraint().relinkHit(h);
@@ -247,7 +282,7 @@ Puzzle.prototype.coverHitConstraints = function(level, hit) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.coverHitConstraints: parameter should be Hit");
   }
-  for (var h = hit.getRight(); h != hit; h = h.getRight()) {
+  for (var h = hit.getRight(); h !== hit; h = h.getRight()) {
     this.cover(level, h.getConstraint());
   }
 };
@@ -260,39 +295,35 @@ Puzzle.prototype.uncoverHitConstraints = function(hit) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.uncoverHitConstraints: parameter should be Hit");
   }
-  for (var h = hit.getLeft(); h != hit; h = h.getLeft()) {
+  for (var h = hit.getLeft(); h !== hit; h = h.getLeft()) {
     this.uncover(h.getConstraint());
   }
 };
 
 // Removes a candidate that has been eliminated by the logical
-// solver or by the user. The parameter is any hit in the
-// candidate's hit list. Returns the number of hit updates.
+// solver or by the user.
 //
-// TODO refactor to take the candidate as parameter
-//
-Puzzle.prototype.eliminateCandidate = function(hit) {
-  if (hit.constructor !== Hit) {
-    throw new Error("Puzzle.eliminateCandidate: parameter should be Hit");
+Puzzle.prototype.eliminateCandidate = function(candidate) {
+  if (candidate.constructor !== Candidate) {
+    throw new Error("Puzzle.eliminateCandidate: parameter should be Candidate");
   }
 
   // unlink the candidate's hits from their constraints
-  var rr = hit;
-  var k = 0;
+  var h = candidate.getFirstHit();
   do {
-    rr.getConstraint().unlinkHit(rr);
-    rr = rr.getRight();
-    k++;
-  } while (rr != hit);
+    h.getConstraint().unlinkHit(h);
+    h = h.getRight();
+  } while (h !== candidate.getFirstHit());
   
   // unlink the candidate from the candidates list
-  this._unlinkCandidate(hit.getCandidate());
-  
-  return k;
+  this._unlinkCandidate(candidate);
+
+  // push it onto the eliminated candidates list
+  this._eliminated.push(candidate);
 };
 
 // Restores a candidate that was eliminated by the logical solver
-// or by a human solver. Returns the number of hit updates performed.
+// or by a human solver. Returns the restored candidate.
 //
 // Needed if the logical solver is alternated with the backtracking
 // solver, in order to find chains, and to support undo.
@@ -301,26 +332,78 @@ Puzzle.prototype.eliminateCandidate = function(hit) {
 // was removed- i.e. this should only be used to support backtracking or
 // undo operations, not manually adding an arbitrary candidate.
 //
-// TODO refactor to take the candidate as parameter
-//
-Puzzle.prototype.restoreCandidate = function(hit) {
-  if (hit.constructor !== Hit) {
-    throw new Error("Puzzle.restoreCandidate: parameter should be Hit");
+Puzzle.prototype.restoreCandidate = function() {
+  if (arguments.length !== 0) {
+    throw new Error("Puzzle.restoreCandidate: too many arguments");
   }
 
+  var c = this._eliminated.pop();
+
   // link the candidate's hits back into their constraint lists
-  var rr = hit;
-  var k = 0;
+  var h = c.getFirstHit();
   do {
-    rr.getConstraint().relinkHit(rr);
-    rr = rr.getLeft();
-    k++;
-  } while (rr != hit); 
+    h.getConstraint().relinkHit(h);
+    h = h.getLeft();
+  }
+  while (h !== c.getFirstHit()); 
   
   // link the candidate back into the candidates list
-  this._relinkCandidate(rr.getCandidate());
+  this._relinkCandidate(c);
   
-  return k;
+  return c;
+};
+
+// Adds a candidate to the diagram manually, as directed by the human solver.
+//
+// The parameter is the original candidate, which must have been manually
+// eliminated and not in conflict with any solved/hinted cells.
+//
+// Returns the new candidate that was created and added.
+//
+Puzzle.prototype.addManualCandidate = function(c) {
+  if (c.constructor !== Candidate) {
+    throw new Error("Puzzle.addManualCandidate: parameter should be Candidate");
+  }
+
+  // double check it is OK to add this candidate all of its hits must be
+  // against active constraints
+  var activeConstraints = this.getActiveConstraints();
+  var h = c.getFirstHit();
+  do {
+    if (activeConstraints.find(c => c === h.getConstraint()) === undefined) {
+      console.log("Attempted to add conflicting candidate at row " + c.getRow() +
+                  ", col " + c.getCol() + ", digit " + c.getDigit());
+      return undefined;
+    }
+
+    h = h.getRight();
+  }
+  while (h !== c.getFirstHit());
+
+  // create a copy of the candidate
+  var newCandidate = new Candidate(c.getRow(), c.getCol(), c.getDigit(), c.getDisplayName());
+
+  // link the new candidate into the candidates list
+  newCandidate.addToCandidateList(this._rootCandidate);
+  this._candidateCount++;
+  
+  // loop through the old candidate's constraints
+  h = c.getFirstHit();
+  do {
+    // add a hit for the candidate against this constraint
+    var newHit = new Hit();
+    
+    // add the new hit to the new candidate's list
+    newCandidate.addHit(newHit);
+
+    // add the new hit to the constraint's list
+    h.getConstraint().addHit(newHit);
+
+    h = h.getRight();
+  }
+  while (h !== c.getFirstHit());
+
+  return newCandidate;
 };
 
 // Pushes a candidate onto the solution list (possibly tentatively), and
@@ -467,14 +550,14 @@ Puzzle.prototype.toStringSolved = function() {
     }
   }
     
-  for (var c of this.getHints()) {
+  this._hints.map(c => {
     board[c.getRow()][c.getCol()] = "" + c.getDigit();
-  }
+  });
 
-  for (var h of this.getSolution()) {
-    c = h.getCandidate();
+  this._solution.map(h => {
+    var c = h.getCandidate();
     board[c.getRow()][c.getCol()] = "" + c.getDigit();
-  }
+  });
   
   // join each row into a single string
   for (row = 0; row < 9; row++) {
@@ -513,17 +596,19 @@ Puzzle.prototype.toStringUnsolved = function() {
   }
 
   // show the hints in the center of their cells, surrounded by '*'
-  for (var c of this.getHints())
+  this._hints.map(c => {
     this.setSingleValue(board, c.getRow(), c.getCol(), c.getDigit(), "*");
+  });
 
   // show the solved cells in the center of their cells, surrounded by '+'
-  for (c of this.getSolution().map(h => h.getCandidate()))
+  this._solution.map(h => h.getCandidate()).map(c => {
     this.setSingleValue(board, c.getRow(), c.getCol(), c.getDigit(), "+");
+  });
 
   // show the candidates in a little matrix within their cell
-  for (c of this.getActiveCandidates()) {
+  this.getActiveCandidates().map(c => {
     this.setCandidate(board, c.getRow(), c.getCol(), c.getDigit());
-  }
+  });
 
   // join each row into a single string
   for (row = 0; row < rows; row++) {

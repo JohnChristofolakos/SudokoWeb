@@ -51,7 +51,7 @@ describe("hit", () => {
     var s = c.getFirstHit().toString();
     expect(s).toBe("r0c0d1: p00 r01 c01 (1 of 2)");
 
-    puzzle.eliminateCandidate(c.getFirstHit());
+    puzzle.eliminateCandidate(c);
     s = c.getFirstHit().toString();
     expect(s).toBe("r0c0d1: p00 r01 c01 (not in its constraint)");
 
@@ -69,7 +69,7 @@ describe("hit", () => {
     expect(s).toBe("1 in cell A1");
 
     // display name should work even after being eliminated
-    puzzle.eliminateCandidate(c.getFirstHit());
+    puzzle.eliminateCandidate(c);
     s = c.getFirstHit().getDisplayName();
     expect(s).toBe("1 in cell A1");
 

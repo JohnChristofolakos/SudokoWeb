@@ -208,7 +208,7 @@ describe("puzzle", () => {
 
     puzzle.solve(0, puzzle.findCandidate("r0c0d1").getFirstHit());
     puzzle.solve(0, puzzle.findCandidate("r0c1d2").getFirstHit());
-    puzzle.solve(0, puzzle.findCandidate("r1c0d2").getFirstHit());
+    puzzle.solve(0, puzzle.findCandidate(1, 0, 2).getFirstHit());
     puzzle.solve(0, puzzle.findCandidate("r1c1d1").getFirstHit());
 
     expect(puzzle.getConstraintCount()).toBe(0);
@@ -226,7 +226,7 @@ describe("puzzle", () => {
     puzzle.solve(0, puzzle.findCandidate("r0c0d1").getFirstHit());
     puzzle.solve(0, puzzle.findCandidate("r0c1d2").getFirstHit());
     puzzle.solve(0, puzzle.findCandidate("r1c0d2").getFirstHit());
-    puzzle.solve(0, puzzle.findCandidate("r1c1d1").getFirstHit());
+    puzzle.solve(0, puzzle.findCandidate(1, 1, 1).getFirstHit());
     expect(puzzle.isSolved()).toBe(true);
 
     puzzle.unsolve();
@@ -275,10 +275,10 @@ describe("puzzle", () => {
     expect(puzzle.getConstraintCount()).toBe(12);
     expect(puzzle.getCandidateCount()).toBe(8);
 
-    var h1 = puzzle.findCandidate("r0c1d1").getFirstHit();
-    puzzle.eliminateCandidate(h1);
-    var h2 = puzzle.findCandidate("r0c1d2").getFirstHit();
-    puzzle.eliminateCandidate(h2);
+    var c1 = puzzle.findCandidate("r0c1d1");
+    puzzle.eliminateCandidate(c1);
+    var c2 = puzzle.findCandidate("r0c1d2");
+    puzzle.eliminateCandidate(c2);
 
     expect(puzzle.isSolved()).toBe(false);
     expect(puzzle.isBlocked()).toBe(true);
@@ -289,8 +289,18 @@ describe("puzzle", () => {
     expect(candidateNames).not.toContain("r0c1d1");
     expect(candidateNames).not.toContain("r0c1d2");
 
-    puzzle.restoreCandidate(h2);
-    puzzle.restoreCandidate(h1);
+    candidates = puzzle.getEliminatedCandidates();
+    candidateNames = candidates.map((c) => c.getName());
+    expect(candidateNames).toContain("r0c1d1");
+    expect(candidateNames).toContain("r0c1d2");
+    expect(puzzle.findEliminatedCandidate("r0c1d1").getName()).toBe("r0c1d1");
+    expect(puzzle.findEliminatedCandidate(0, 1, 2).getName()).toBe("r0c1d2");
+
+    // restore c2 via 'undo'
+    puzzle.restoreCandidate();
+
+    // manuallly add c1
+    puzzle.addManualCandidate(c1);
 
     expect(puzzle.isSolved()).toBe(false);
     expect(puzzle.isBlocked()).toBe(false);
@@ -300,6 +310,15 @@ describe("puzzle", () => {
     candidateNames = candidates.map((c) => c.getName());
     expect(candidateNames).toContain("r0c1d1");
     expect(candidateNames).toContain("r0c1d2");
+
+    // c1 was manually added, so still should be in the eliminated list, and
+    // a new copy should be in the active list
+    candidates = puzzle.getEliminatedCandidates();
+    expect(candidates.length).toBe(1);
+    expect(puzzle.findEliminatedCandidate("r0c1d1")).toBe(c1);
+    var newC1 = puzzle.findCandidate(0, 1, 1);
+    expect(newC1).not.toBeUndefined();
+    expect(newC1).not.toBe(c1);
   });
 
   it("can be printed in unsolved form", () => {

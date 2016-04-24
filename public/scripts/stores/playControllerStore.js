@@ -11,7 +11,8 @@ var EntryMode = keyMirror({
 
 var DigitMode = keyMirror({
   BIG_NUMBER: null,
-  CANDIDATE: null
+  CANDIDATE: null,
+  CLEAR: null
 });
 
 var PlayControllerStore = Fluxxor.createStore({
@@ -20,21 +21,29 @@ var PlayControllerStore = Fluxxor.createStore({
 
     this.bindActions(
       sudokuActionTypes.SET_PUZZLE, this.onSetPuzzle,
- 
+      sudokuActionTypes.REMOVE_CANDIDATE, this.onPuzzleUpdate,
+      sudokuActionTypes.RESTORE_CANDIDATE, this.onPuzzleUpdate,
+      sudokuActionTypes.SOLVE_CELL, this.onPuzzleUpdate,
+      sudokuActionTypes.UNSOLVE, this.onPuzzleUpdate,
+
       sudokuActionTypes.SELECT_CELL, this.onSelectCell,
       sudokuActionTypes.UNSELECT_CELL, this.onUnselectCell,
       sudokuActionTypes.SELECT_DIGIT, this.onSelectDigit,
       sudokuActionTypes.UNSELECT_DIGIT, this.onUnselectDigit,
-      sudokuActionTypes.SET_DIGIT_MODE, this.onSetDigitMode
+      sudokuActionTypes.SET_DIGIT_MODE, this.onSetDigitMode,
+      sudokuActionTypes.TOGGLE_CANDIDATE, this.onPuzzleUpdate,
+      sudokuActionTypes.ADD_SOLUTION, this.onPuzzleUpdate,
+      sudokuActionTypes.CLEAR_CELL, this.onPuzzleUpdate
     );
   },
 
   clearState: function() {
     this.digitSelected = 0;
-    this.cellRowSelected = 0;
-    this.cellColSelected = 0;
+    this.cellRowSelected = -1;
+    this.cellColSelected = -1;
     this.entryMode = EntryMode.NONE;
     this.digitMode = DigitMode.BIG_NUMBER;
+    this.digitsEnabled = [];
   },
 
   getState: function() {
@@ -43,29 +52,53 @@ var PlayControllerStore = Fluxxor.createStore({
       cellRowSelected: this.cellRowSelected,
       cellColSelected: this.cellColSelected,
       entryMode: this.entryMode,
-      digitMode: this.digitMode
+      digitMode: this.digitMode,
+      digitsEnabled: this.digitsEnabled
     };
   },
 
-  onSetPuzzle: function() {
-    this.clearState();
+  setFlux: function(flux) {
+    this.flux = flux;
+  },
 
-    this.emit("change");
+  setDigitsEnabled: function() {
+    if (this.entryMode === EntryMode.CELL_SELECTED) {
+      // only enable digits that could be candidates in this cell
+      this.digitsEnabled = this.flux.store("PuzzleStore")
+        .getPossibleCandidates(this.cellRowSelected, this.cellColSelected);
+    }
+    else {
+      // only enable digits that have not been completely solved yet
+      this.digitsEnabled = this.flux.store("PuzzleStore")
+        .getUnsolvedCandidates();
+    }
+  },
+
+  onSetPuzzle: function() {
+    this.waitFor(["PuzzleStore"], function() {
+
+      this.clearState();
+      this.setDigitsEnabled();
+
+      this.emit("change");
+    });
   },
 
   onSelectCell: function(payload) {
     this.cellRowSelected = payload.row;
     this.cellColSelected = payload.col;
     this.entryMode = EntryMode.CELL_SELECTED;
+    this.setDigitsEnabled();
 
     this.emit("change");
   },
 
   onUnselectCell: function() {
-    this.cellRowSelected = 0;
-    this.cellColSelected = 0;
+    this.cellRowSelected = -1;
+    this.cellColSelected = -1;
     this.entryMode = EntryMode.NONE;
-    
+    this.setDigitsEnabled();
+
     this.emit("change");
   },
 
@@ -84,11 +117,19 @@ var PlayControllerStore = Fluxxor.createStore({
   },
 
   onSetDigitMode: function(payload) {
-    this.digitMode = payload.mode;
+    this.digitMode = payload.digitMode;
+    this.setDigitsEnabled();
 
     this.emit("change");
-  }
+  },
 
+  onPuzzleUpdate: function() {
+    this.waitFor(["PuzzleStore"], function() {
+      this.setDigitsEnabled();
+
+      this.emit("change");
+    });
+  }
 });
 
 module.exports = {

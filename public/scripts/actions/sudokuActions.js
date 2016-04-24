@@ -26,16 +26,36 @@ module.exports = {
     this.dispatch(ActionTypes.UNSOLVE, {});
   },
 
-  removeSolution: function(hit) {
-    this.dispatch(ActionTypes.REMOVE_SOLUTION, {hit: hit});
+  toggleCandidate: function(row, col,  digit) {
+    this.dispatch(ActionTypes.TOGGLE_CANDIDATE, {
+      row: row,
+      col: col,
+      digit: digit
+    });
+  },
+
+  addSolution: function(row, col, digit) {
+    this.dispatch(ActionTypes.ADD_SOLUTION, {
+      row: row,
+      col: col,
+      digit: digit
+    });
+  },
+
+  removeSolution: function(row, col) {
+    this.dispatch(ActionTypes.REMOVE_SOLUTION, {row: row, col: col});
   },
 
   //////// play controller updates
 
   selectDigit: function(digit) {
-    this.dispatch(ActionTypes.HIGHLIGHT_DIGIT, {
+    this.dispatch(ActionTypes.SELECT_DIGIT, {
       digit: digit
     });
+  },
+
+  unselectDigit: function() {
+    this.dispatch(ActionTypes.UNSELECT_DIGIT, {});
   },
 
   selectCell: function(row, col) {
@@ -45,16 +65,15 @@ module.exports = {
     });
   },
 
-
-  setEntryMode: function(mode) {
-    this.dispatch(ActionTypes.SET_ENTRY_MODE, {
-      mode: mode
-    });
+  unselectCell: function() {
+    this.dispatch(ActionTypes.UNSELECT_CELL, {});
   },
 
-  setDigitMode: function(mode) {
-    this.dispatch(ActionTypes.SET_DIGIT_MODE, {
-      mode: mode
-    });
+  setDigitMode: function(digitMode) {
+    this.dispatch(ActionTypes.SET_DIGIT_MODE, {digitMode: digitMode});
+  },
+
+  clearCell: function(row, col) {
+    this.dispatch(ActionTypes.CLEAR_CELL, { row: row, col: col });
   }
 };

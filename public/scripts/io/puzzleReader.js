@@ -191,7 +191,7 @@ PuzzleReader.prototype.generate = function(puzzle) {
   while ((name = this.getCandidate(i++)) != null) {
     var candidate = puzzle.findCandidate(name);
     if (candidate) {
-      puzzle.eliminateCandidate(candidate.getFirstHit());
+      puzzle.eliminateCandidate(candidate);
     }
   }
 };

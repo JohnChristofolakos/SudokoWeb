@@ -15,6 +15,8 @@ var SudokuApp = React.createClass({
 
 
   render: function() {
+    console.log("Rendering sudokuApp");
+    
     return (
       <div className="sudokuApp">
           <SudokuGrid onCellClicked={this.onCellClicked}/>

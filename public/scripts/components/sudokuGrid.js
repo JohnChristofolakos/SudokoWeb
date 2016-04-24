@@ -1,12 +1,16 @@
 var React = require("react");
 var Fluxxor = require("fluxxor");
+var classNames = require("classnames");
+
 var viewConst = require("../constants/sudokuConst.js").sudokuViewConst;
+var { EntryMode, DigitMode } = require("../stores/playControllerStore.js");
 
 // component to render a single candidate
 var GridCandidate = React.createClass({
   propTypes: {
     digit: React.PropTypes.number.isRequired
   },
+
   render: function() {
     var style = {
       top: Math.floor((this.props.digit - 1) / 3) * 16,
@@ -25,9 +29,11 @@ var GridCandidatesLayer = React.createClass({
   propTypes: {
     candidates: React.PropTypes.arrayOf(React.PropTypes.number).isRequired
   },
+
   eachCandidate: function(digit) {
     return <GridCandidate digit={digit} key={digit}/>;
   },
+
   render: function() {
     return (
       <div className="gridCandidatesLayer">
@@ -42,6 +48,7 @@ var GridSolved = React.createClass({
   propTypes: {
     solution: React.PropTypes.number.isRequired
   },
+
   render: function() {
     return (
       <div className="gridSolved">{this.props.solution}</div>
@@ -54,6 +61,7 @@ var GridHinted = React.createClass({
   propTypes: {
     hint: React.PropTypes.number.isRequired
   },
+
   render: function() {
     return (
       <div className="gridHinted">{this.props.hint}</div>
@@ -69,6 +77,10 @@ var GridCell = React.createClass({
     candidates: React.PropTypes.arrayOf(React.PropTypes.number).isRequired,
     solution: React.PropTypes.number.isRequired,
     hint: React.PropTypes.number.isRequired,
+    isHighlighted: React.PropTypes.bool.isRequired,
+    isSelected: React.PropTypes.bool.isRequired,
+    isSelectedCandidate: React.PropTypes.bool.isRequired,
+    isDisabled:  React.PropTypes.bool.isRequired,
     onCellClicked: React.PropTypes.func.isRequired
   },
 
@@ -77,7 +89,13 @@ var GridCell = React.createClass({
   ],
 
   render: function() {
-    var shadow = "0px 0px 5px 2px rgba(198, 194, 153, 0.75)";
+    var cellClass = classNames({
+      gridCell: true,
+      gridCellHighlighted: this.props.isHighlighted,
+      gridCellSelected: this.props.isSelected,
+      gridCellSelectedCandidate: this.props.isSelectedCandidate,
+      gridCellDisabled: this.props.isDisabled
+    });
 
     var style = {
       top: this.props.row * (viewConst.GRID_CELL_SIZE + viewConst.GRID_CELL_SPACING) +
@@ -85,10 +103,7 @@ var GridCell = React.createClass({
       left: this.props.col * (viewConst.GRID_CELL_SIZE + viewConst.GRID_CELL_SPACING) +
            Math.floor(this.props.col / 3) * viewConst.GRID_UNIT_SPACING,
       width: viewConst.GRID_CELL_SIZE,
-      height: viewConst.GRID_CELL_SIZE,
-      boxShadow: shadow,
-      WebkitBoxShadow: shadow,
-      MozBoxShadow: shadow
+      height: viewConst.GRID_CELL_SIZE
     };
 
     var elem = this.props.solution != 0
@@ -100,7 +115,7 @@ var GridCell = React.createClass({
     ;
 
     return (
-      <div className="gridCell" style={style}
+      <div className={cellClass} style={style}
           onClick={this.onCellClicked}>
         {elem}
       </div>
@@ -119,8 +134,16 @@ var GridFrame = React.createClass({
     candidates: React.PropTypes.object.isRequired,
     solution: React.PropTypes.object.isRequired,
     hints: React.PropTypes.object.isRequired,
+    cellRowSelected: React.PropTypes.number.isRequired,
+    cellColSelected: React.PropTypes.number.isRequired,
+    digitMode: React.PropTypes.string.isRequired,
+    digitSelected: React.PropTypes.number.isRequired,
     onCellClicked: React.PropTypes.func.isRequired
   },
+
+  mixins: [
+    Fluxxor.FluxMixin(React)
+  ],
 
   render: function() {
     var cellProps = [];
@@ -130,21 +153,51 @@ var GridFrame = React.createClass({
         cellProps[row].push({
           candidates: [],
           solution: 0,
-          hint: 0
+          hint: 0,
+          isHighlighted: false,
+          isSelected: (row === this.props.cellRowSelected) &&
+                      (col === this.props.cellColSelected) &&
+                      (this.props.digitMode === DigitMode.BIG_NUMBER),
+          isSelectedCandidate: (row === this.props.cellRowSelected) &&
+                               (col === this.props.cellColSelected) &&
+                               (this.props.digitMode === DigitMode.CANDIDATE),
+          isDisabled: false
         });
       }
     }
 
-    this.props.candidates.forEach( (c) => {
+    this.props.candidates.forEach(c => {
       cellProps[c.getRow()][c.getCol()].candidates.push(c.getDigit());
+      if (c.getDigit() === this.props.digitSelected) {
+        cellProps[c.getRow(), c.getCol()].isHighlighted = true;
+      }
     });
 
-    this.props.solution.forEach( (c) => {
+    this.props.solution.forEach(c => {
       cellProps[c.getRow()][c.getCol()].solution = c.getDigit();
+      if (c.getDigit() === this.props.digitSelected) {
+        cellProps[c.getRow(), c.getCol()].isHighlighted = true;
+      }
+      if (c.getRow() === this.props.cellRowSelected &&
+          c.getCol() === this.props.cellColSelected &&
+          this.props.digitMode === DigitMode.CANDIDATE) {
+        cellProps[c.getRow(), c.getCol()].isSelected = false;
+        cellProps[c.getRow(), c.getCol()].isSelectedCandidate = false;
+        cellProps[c.getRow(), c.getCol()].isDisabled = true;
+      }
     });
 
-    this.props.hints.forEach( (c) => {
+    this.props.hints.forEach(c => {
       cellProps[c.getRow()][c.getCol()].hint = c.getDigit();
+      if (c.getDigit() === this.props.digitSelected) {
+        cellProps[c.getRow(), c.getCol()].isHighlighted = true;
+      }
+      if (c.getRow() === this.props.cellRowSelected &&
+          c.getCol() === this.props.cellColSelected) {
+        cellProps[c.getRow(), c.getCol()].isSelected = false;
+        cellProps[c.getRow(), c.getCol()].isSelectedCandidate = false;
+        cellProps[c.getRow(), c.getCol()].isDisabled = true;
+      }
     });
 
     var cells = [];
@@ -158,6 +211,10 @@ var GridFrame = React.createClass({
             candidates={cellProps[row][col].candidates}
             solution={cellProps[row][col].solution}
             hint={cellProps[row][col].hint}
+            isHighlighted={cellProps[row][col].isHighlighted}
+            isSelected={cellProps[row][col].isSelected}
+            isSelectedCandidate={cellProps[row][col].isSelectedCandidate}
+            isDisabled={cellProps[row][col].isDisabled}
             onCellClicked={this.props.onCellClicked}
           />);
       }
@@ -183,7 +240,7 @@ var SudokuGrid = React.createClass({
 
   mixins: [
     Fluxxor.FluxMixin(React),
-    Fluxxor.StoreWatchMixin("PuzzleStore")
+    Fluxxor.StoreWatchMixin("PuzzleStore", "PlayControllerStore")
   ],
 
   getInitialState: function() {
@@ -193,15 +250,29 @@ var SudokuGrid = React.createClass({
 
   getStateFromFlux: function() {
     var flux = this.getFlux();
-    return flux.store("PuzzleStore").getState();    
+    return {
+      puzzle: flux.store("PuzzleStore").getState(),
+      playController: flux.store("PlayControllerStore").getState()
+    };
   },
 
   render: function() {
+    console.log("Rendering sudokuGrid");
+
+    var cellRowSelected = -1, cellColSelected = -1;
+    if (this.state.playController.entryMode === EntryMode.CELL_SELECTED) {
+      cellRowSelected = this.state.playController.cellRowSelected;
+      cellColSelected = this.state.playController.cellColSelected;
+    }
     return (
       <GridFrame
-        candidates={this.state.candidates}
-        solution={this.state.solution}
-        hints={this.state.hints}
+        candidates={this.state.puzzle.candidates}
+        solution={this.state.puzzle.solution}
+        hints={this.state.puzzle.hints}
+        cellRowSelected={cellRowSelected}
+        cellColSelected={cellColSelected}
+        digitMode={this.state.playController.digitMode}
+        digitSelected={this.state.playController.digitSelected}
         onCellClicked={this.props.onCellClicked}
       />
     );

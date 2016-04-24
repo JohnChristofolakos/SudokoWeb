@@ -189,10 +189,10 @@ describe("constraint", () => {
     puzzleSetup.setupWithBoxes(puzzle, 2);
 
     // remove the 2's from r0c0 amd r0c1
-    var h1 = puzzle.findCandidate("r0c0d2").getFirstHit();
-    var h2 = puzzle.findCandidate("r0c1d2").getFirstHit();
-    puzzle.eliminateCandidate(h1);
-    puzzle.eliminateCandidate(h2);
+    var c1 = puzzle.findCandidate("r0c0d2");
+    var c2 = puzzle.findCandidate("r0c1d2");
+    puzzle.eliminateCandidate(c1);
+    puzzle.eliminateCandidate(c2);
 
     // now the 2's in row 0 should be a strict subset of the 2's in box 1
     var isSubset = puzzle.findConstraint("r02").isStrictSubsetOf(puzzle.findConstraint("b12"));
@@ -203,10 +203,10 @@ describe("constraint", () => {
     expect(isSubset).toBe(false);
 
     // once we remove the 2's from r1c2 and r1c3, they have the same hits
-    var h3 = puzzle.findCandidate("r1c2d2").getFirstHit();
-    var h4 = puzzle.findCandidate("r1c3d2").getFirstHit();
-    puzzle.eliminateCandidate(h3);
-    puzzle.eliminateCandidate(h4);
+    var c3 = puzzle.findCandidate("r1c2d2");
+    var c4 = puzzle.findCandidate("r1c3d2");
+    puzzle.eliminateCandidate(c3);
+    puzzle.eliminateCandidate(c4);
     isSubset = puzzle.findConstraint("r02").isStrictSubsetOf(puzzle.findConstraint("b12"));
     expect(isSubset).toBe(false);
     isSubset = puzzle.findConstraint("b12").isStrictSubsetOf(puzzle.findConstraint("r02"));

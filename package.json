@@ -36,7 +36,7 @@
     "coverage": "jest --coverage",
     "build": "browserify -t [ babelify --presets [ react es2015 ] ] public/scripts/app.js -o public/scripts/bundle.js",
     "lint": "eslint --ignore-pattern bundle.js public/scripts __tests__",
-    "start": "node server.js"
+    "start": "sudo node server.js"
   },
   "keywords": [
     "sudoku",

@@ -9,15 +9,20 @@
 	width: 60px;
 	background-color: transparent;
 	box-shadow: 0px 0px 5px 2px rgba(178, 178, 176, 0.75);
-	webkit-box-shadow: 0px 0px 5px 2px rgba(178, 178, 176, 0.75);
-	moz-box-shadow: 0px 0px 5px 2px rgba(178, 178, 176, 0.75);
+	-webkit-box-shadow: 0px 0px 5px 2px rgba(178, 178, 176, 0.75);
+	-moz-box-shadow: 0px 0px 5px 2px rgba(178, 178, 176, 0.75);
 	border-radius: 20%;
 	display: table-cell;
     vertical-align: middle 
 }
 
 .controllerButtonSelected {
-	background-color: blue;
+	background-color: green;
+	border-radius: 32px;
+}
+
+.controllerButtonSelectedCandidate {
+	background-color: orange;
 	border-radius: 32px;
 }
 
@@ -45,6 +50,10 @@
 }
 
 .controllerDigitSelected {
+	color: white;
+}
+
+.controllerDigitSelectedCandidate {
 	color: white;
 }
 
@@ -82,6 +91,10 @@
 }
 
 .controllerIconSelected {
+	color: white;
+}
+
+.controllerIconSelectedCandidate {
 	color: white;
 }
 

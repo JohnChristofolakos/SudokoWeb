@@ -21,7 +21,7 @@ var Candidate = function (row, col, digit, displayName) {
   this._row = row;
   this._col = col;
   this._digit = digit;
-  this._name = "r" + row + "c" + col + "d" + digit;
+  this._name = Candidate.makeName(row, col, digit);
   this._displayName = displayName;
 
   // private mutable data
@@ -244,6 +244,10 @@ Candidate.prototype.findCommonConstraint = function() {
   
   // hit the end of this's hit list without finding a common constraint
   return null;
+};
+
+Candidate.makeName = function(row, col, digit) {
+  return "r" + row + "c" + col + "d" + digit;
 };
 
 module.exports = Candidate;
