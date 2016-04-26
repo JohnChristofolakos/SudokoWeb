@@ -54,37 +54,62 @@ var PuzzleStore = Fluxxor.createStore({
       digits[i] = false;
     }
 
-    // if it's hinted or solved, then no digits should be enabled - just the X
-    if (this.solution.find(c => c.getRow() === row && c.getCol() === col)) {
-      return digits;
-    }
-    if (this.hints.find(c => c.getRow() === row && c.getCol() === col)) {
+    // if it's hinted then no digits should be enabled
+    if (this.hints.has(Candidate.makeCellId(row, col))) {
       return digits;
     }
 
-    // it's unsolved, so all current candidates are enabled
-    for (i = 1; i <= 9; i++) {
-      if (this.puzzle.findCandidate(Candidate.makeName(row, col, i)))
-        digits[i] = true;
+    // if it's solved, then the current solution should be enabled
+    var solution = this.solution.get(Candidate.makeCellId(row, col));
+    if (solution !== undefined) {
+      digits[solution.getDigit()] = true;
+    }
+    else {
+      // it's unsolved, so all current candidates are enabled
+      for (i = 1; i <= 9; i++) {
+        if (this.puzzle.findCandidate(Candidate.makeName(row, col, i)))
+          digits[i] = true;
+      }
     }
 
-    // and all candidates that could be restored without conflicting with a solved/hinted cell
+    // and all candidates that could be solved or restored without conflicting
+    // with a solved/hinted cell
     var activeConstraints = this.puzzle.getActiveConstraints();
     for (i = 1; i <= 9; i++) {
       if (!digits[i]) {
         var c = this.puzzle.findEliminatedCandidate(row, col, i);
         if (c === undefined) {
-          // it was automatically eliminated because of a conflict - so it's not a possible
+          console.log("Eliminated candidate not found in list - " +
+                      "row " + row + ", col" + col + ", digit " + i);
+          // can't check constraints without a candidate object, so just skip it
         } else {
           // check if any of its constraints are covered
           digits[i] = true;
           var h = c.getFirstHit();
           do {
-            if (activeConstraints.find(constraint => h.getConstraint() === constraint) === undefined) {
+            // If the cell is solved, then all other candidates are bound to conflict
+            // with the solution. So skip checking any constraints that are hit by the
+            // solution
+            var hitsSolution = false;
+            if (solution !== undefined) {
+              var solutionHit = solution.getFirstHit();
+              do {
+                if (solutionHit.getConstraint() === h.getConstraint()) {
+                  hitsSolution = true;
+                  break;
+                }
+                solutionHit = solutionHit.getRight();
+              }
+              while (solutionHit != solution.getFirstHit());
+            }
+
+            if (!hitsSolution &&
+                activeConstraints.find(constraint => h.getConstraint() === constraint) === undefined) {
               // this constraint has been covered, so the candidate would conflict
               digits[i] = false;
               break;
             }
+
             h = h.getRight();
           }
           while (h !== c.getFirstHit());
@@ -108,26 +133,48 @@ var PuzzleStore = Fluxxor.createStore({
       isSolved: false,
       candidates: []
     };
-    if (this.cellRowSelected !== -1 && this.cellColSelected !== -1) {
-      this.hints.forEach(c => {
-        if (c.getRow() === this.cellRowSelected && c.getCol() === this.cellColSelected) {
-          this.cellSelected.isHinted = true;
-          this.cellSelected.candidates.push(c.getDigit());
-        }
-      });
-      this.solution.forEach(c => {
-        if (c.getRow() === this.cellRowSelected && c.getCol() === this.cellColSelected) {
-          this.cellSelected.isSolved = true;
-          this.cellSelected.candidates.push(c.getDigit());
-        }
-      });
-      if (!this.cellSelected.isHinted && !this.cellSelected.isSolved) {
-        this.candidates.forEach(c => {
-          if (c.getRow() === this.cellRowSelected && c.getCol() === this.cellColSelected) {
-            this.cellSelected.candidates.push(c.getDigit());
-          }
-        });
+    if (this.cellRowSelected === -1 || this.cellColSelected === -1)
+      return;
+
+    // is the cell hinted?
+    var c = this.hints.get(Candidate.makeCellId(this.cellRowSelected, this.cellColSelected));
+    if (c !== undefined) {
+      this.cellSelected.isHinted = true;
+      this.cellSelected.candidates.push(c.getDigit());
+      return;
+    }
+
+    // is the cell solved?
+    c = this.solution.get(Candidate.makeCellId(this.cellRowSelected, this.cellColSelected));
+    if (c !== undefined) {
+      this.cellSelected.isSolved = true;
+      this.cellSelected.candidates.push(c.getDigit());
+      return;
+    }
+
+    // not hinted or solved, check what candidates it has
+    this.candidates.forEach(c => {
+      if (c.getRow() === this.cellRowSelected && c.getCol() === this.cellColSelected) {
+        this.cellSelected.candidates.push(c.getDigit());
       }
+    });
+  },
+
+  toggleCandidate: function(row, col, digit) {
+    // is it currently a candidate?
+    var c = this.puzzle.findCandidate(row, col, digit);
+    if (c !== undefined) {
+      this.puzzle.eliminateCandidate(c);
+    }
+    else {
+      c = this.puzzle.findEliminatedCandidate(row, col, digit);
+      if (c === undefined) {
+        console.log("Attempted to restore invalid candidate at row " +
+             row + ", col " + col + ", digit " + digit);
+        return;
+      }
+
+      this.puzzle.manuallyAddCandidate(c);
     }
   },
 
@@ -138,10 +185,10 @@ var PuzzleStore = Fluxxor.createStore({
         .map(c => { return [ c.getName(), c ]; } ));
 
     this.solution = Map(this.puzzle.getSolution()
-        .map(h => { return [ h.getCandidate().getName(), h.getCandidate() ]; } ));
+        .map(h => { return [ h.getCandidate().getCellId(), h.getCandidate() ]; } ));
 
     this.hints = Map(this.puzzle.getHints()
-        .map(c => { return [ c.getName(), c ]; } ));
+        .map(c => { return [ c.getCellId(), c ]; } ));
 
     this.emit("change");
   },
@@ -154,6 +201,7 @@ var PuzzleStore = Fluxxor.createStore({
     this.emit("change");
   },
 
+  // to be used for backtracking/undo only - otherwise use onToggleCandidate
   onRestoreCandidate: function(payload) {
     this.puzzle.restoreCandidate(payload.hit);
 
@@ -169,7 +217,7 @@ var PuzzleStore = Fluxxor.createStore({
     this.puzzle.solve(0, payload.hit);
 
     this.solution = this.solution.set(
-        payload.hit.getCandidate().getName(),
+        payload.hit.getCandidate().getCellId(),
         payload.hit.getCandidate()
     );
 
@@ -179,10 +227,11 @@ var PuzzleStore = Fluxxor.createStore({
     this.emit("change");
   },
 
+  // for backtracking/undo only - otherwise use onClearCell
   onUnsolve: function() {
     var hit = this.puzzle.unsolve();
 
-    this.solution = this.solution.delete(hit.getCandidate().getName());
+    this.solution = this.solution.delete(hit.getCandidate().getCellId());
 
     this.candidates = Map(this.puzzle.getActiveCandidates()
         .map(c => { return [ c.getName(), c ]; } ));
@@ -220,21 +269,7 @@ var PuzzleStore = Fluxxor.createStore({
   },
 
   onToggleCandidate: function(payload) {
-    // is it currently a candidate?
-    var c = this.puzzle.findCandidate(payload.row, payload.col, payload.digit);
-    if (c !== undefined) {
-      this.puzzle.eliminateCandidate(c);
-    }
-    else {
-      c = this.puzzle.findEliminatedCandidate(payload.row, payload.col, payload.digit);
-      if (c === undefined) {
-        console.log("Attempted to restore invalid candidate at row " +
-             payload.row + ", col " + payload.col + ", digit " + payload.digit);
-        return;
-      }
-
-      this.puzzle.addManualCandidate(c);
-    }
+    this.toggleCandidate(payload.row, payload.col, payload.digit);
 
     this.candidates = Map(this.puzzle.getActiveCandidates()
         .map(c => { return [ c.getName(), c ]; } ));
@@ -262,7 +297,38 @@ var PuzzleStore = Fluxxor.createStore({
   },
 
   onClearCell: function(payload) {
-    // TODO
+    // check if this is a hinted cell
+    if (this.hints.has(Candidate.makeCellId(payload.row, payload.col))) {
+      // can't clear a hinted cell, just ignore the click
+      return;
+    }
+
+    // is this a solved cell?
+    var c = this.solution.get(Candidate.makeCellId(payload.row, payload.col));
+    if (c !== undefined) {
+      // solved, so manually remove the solution
+      this.puzzle.manuallyRemoveSolution(c);
+
+      /// and update the solution state
+      this.solution = this.solution.delete(Candidate.makeCellId(payload.row, payload.col));
+    }
+
+    // toggle any eliminated candidates back into the cell
+    var possibleCandidates = this.getPossibleCandidates(payload.row, payload.col);
+    for (var digit = 1; digit <= 9; digit++) {
+      if (possibleCandidates[digit]) {
+        if (!this.candidates.find(c => c.getRow() === payload.row &&
+                                       c.getCol() === payload.col &&
+                                       c.getDigit() === digit
+                                 )) {
+          this.toggleCandidate(payload.row, payload.col, digit);
+        }
+      }
+    }
+
+    // rebuild the candidates map
+    this.candidates = Map(this.puzzle.getActiveCandidates()
+        .map(c => { return [ c.getName(), c ]; } ));
 
     this.buildSelectedCell();
 

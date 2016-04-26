@@ -17,7 +17,7 @@ var Hit = function(h) {
   // initialize private mutables
   this._constraint = null;    // the constraint that is hit
   this._candidate = null;     // the candidate doing the hitting
-  this._left = this;        // predecessor in the canididate hit list
+  this._left = this;        // predecessor in the candidate hit list
   this._right = this;       // successor in the candidate hit list
   this._up = this;        // predecessor in the constraint hit list
   this._down = this;        // successor in the constraint hit list

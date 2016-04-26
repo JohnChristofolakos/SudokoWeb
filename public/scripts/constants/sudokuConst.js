@@ -7,17 +7,17 @@ var sudokuActionTypes = keyMirror({
   RESTORE_CANDIDATE: null,
   SOLVE_CELL: null,
   UNSOLVE: null,
+  TOGGLE_CANDIDATE: null,
+  ADD_SOLUTION: null,
+  CLEAR_CELL: null,
   
   // play controller updates
   SELECT_CELL: null,
   UNSELECT_CELL: null,
   SELECT_DIGIT: null,
   UNSELECT_DIGIT: null,
-  TOGGLE_DIGIT_MODE: null,
-  SET_DIGIT_MODE: null,
-  TOGGLE_CANDIDATE: null,
-  ADD_SOLUTION: null,
-  CLEAR_CELL: null
+  SET_ENTRY_MODE: null,
+  SET_DIGIT_MODE: null
 });
 
 var sudokuUnitTypes = keyMirror({

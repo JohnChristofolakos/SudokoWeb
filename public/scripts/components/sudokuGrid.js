@@ -136,6 +136,7 @@ var GridFrame = React.createClass({
     hints: React.PropTypes.object.isRequired,
     cellRowSelected: React.PropTypes.number.isRequired,
     cellColSelected: React.PropTypes.number.isRequired,
+    cellSelected: React.PropTypes.object.isRequired,
     digitMode: React.PropTypes.string.isRequired,
     digitSelected: React.PropTypes.number.isRequired,
     onCellClicked: React.PropTypes.func.isRequired
@@ -166,37 +167,42 @@ var GridFrame = React.createClass({
       }
     }
 
+    if (this.props.cellRowSelected >= 0 && this.props.cellColSelected >= 0) {
+      if (this.props.cellSelected.isSolved && this.props.digitMode === DigitMode.CANDIDATE) {
+        cellProps[this.props.cellRowSelected][this.props.cellColSelected].isSelected = false;
+        cellProps[this.props.cellRowSelected][this.props.cellColSelected].isSelectedCandidate = false;
+        cellProps[this.props.cellRowSelected][this.props.cellColSelected].isDisabled = true;
+      }
+      if (this.props.cellSelected.isHinted) {
+        cellProps[this.props.cellRowSelected][this.props.cellColSelected].isSelected = false;
+        cellProps[this.props.cellRowSelected][this.props.cellColSelected].isSelectedCandidate = false;
+        cellProps[this.props.cellRowSelected][this.props.cellColSelected].isDisabled = true;
+      }
+    }
+
+    var digitToHighlight = this.props.digitSelected;  // 0 if not in digit mode
+    if (this.props.cellSelected.isHinted || this.props.cellSelected.isSolved) {
+      digitToHighlight = this.props.cellSelected.candidates[0];
+    }
+
     this.props.candidates.forEach(c => {
       cellProps[c.getRow()][c.getCol()].candidates.push(c.getDigit());
-      if (c.getDigit() === this.props.digitSelected) {
-        cellProps[c.getRow(), c.getCol()].isHighlighted = true;
+      if (c.getDigit() === digitToHighlight) {
+        cellProps[c.getRow()][c.getCol()].isHighlighted = true;
       }
     });
 
     this.props.solution.forEach(c => {
       cellProps[c.getRow()][c.getCol()].solution = c.getDigit();
-      if (c.getDigit() === this.props.digitSelected) {
-        cellProps[c.getRow(), c.getCol()].isHighlighted = true;
-      }
-      if (c.getRow() === this.props.cellRowSelected &&
-          c.getCol() === this.props.cellColSelected &&
-          this.props.digitMode === DigitMode.CANDIDATE) {
-        cellProps[c.getRow(), c.getCol()].isSelected = false;
-        cellProps[c.getRow(), c.getCol()].isSelectedCandidate = false;
-        cellProps[c.getRow(), c.getCol()].isDisabled = true;
+      if (c.getDigit() === digitToHighlight) {
+        cellProps[c.getRow()][c.getCol()].isHighlighted = true;
       }
     });
 
     this.props.hints.forEach(c => {
       cellProps[c.getRow()][c.getCol()].hint = c.getDigit();
-      if (c.getDigit() === this.props.digitSelected) {
-        cellProps[c.getRow(), c.getCol()].isHighlighted = true;
-      }
-      if (c.getRow() === this.props.cellRowSelected &&
-          c.getCol() === this.props.cellColSelected) {
-        cellProps[c.getRow(), c.getCol()].isSelected = false;
-        cellProps[c.getRow(), c.getCol()].isSelectedCandidate = false;
-        cellProps[c.getRow(), c.getCol()].isDisabled = true;
+      if (c.getDigit() === digitToHighlight) {
+        cellProps[c.getRow()][c.getCol()].isHighlighted = true;
       }
     });
 
@@ -271,6 +277,7 @@ var SudokuGrid = React.createClass({
         hints={this.state.puzzle.hints}
         cellRowSelected={cellRowSelected}
         cellColSelected={cellColSelected}
+        cellSelected={this.state.puzzle.cellSelected}
         digitMode={this.state.playController.digitMode}
         digitSelected={this.state.playController.digitSelected}
         onCellClicked={this.props.onCellClicked}

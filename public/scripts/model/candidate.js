@@ -70,6 +70,11 @@ Candidate.prototype.getName = function() {
   return this._name;
 };
 
+// Returns a unique ID for the candidate's cell, for maps
+Candidate.prototype.getCellId = function() {
+  return Candidate.makeCellId(this._row, this._col);
+};
+
 // Adds this candidate to the candidate list with the specified
 // root. Used only during the initial puzzle setup.  
 Candidate.prototype.addToCandidateList = function addToCandidateList(root) {
@@ -105,6 +110,15 @@ Candidate.prototype.relinkIntoCandidateList =
   function relinkIntoCandidateList() {
     this._prev._next = this._next._prev = this;
   };
+
+// Links this candidate into the candidate list at a specified position
+// (when manually adding a candidate)
+Candidate.prototype.linkIntoCandidateListAt = function(cIns) {
+  this._prev = cIns.getPrev();
+  this._next = cIns;
+  cIns.getPrev()._next = this;
+  cIns._prev = this;
+};
 
 // Return a less concise representation of the row, for logging
 Candidate.prototype.toString = function toString() {
@@ -246,8 +260,14 @@ Candidate.prototype.findCommonConstraint = function() {
   return null;
 };
 
+///////// static methods
+
 Candidate.makeName = function(row, col, digit) {
   return "r" + row + "c" + col + "d" + digit;
+};
+
+Candidate.makeCellId = function(row, col) {
+  return "r" + row + "c" + col;
 };
 
 module.exports = Candidate;

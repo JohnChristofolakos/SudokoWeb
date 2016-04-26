@@ -1,5 +1,6 @@
 var sudokuConst = require("../constants/sudokuConst.js");
 var sudokuUnitNames = sudokuConst.sudokuUnitNames;
+var Hit = require("./hit.js");
 
 // Returns an object representing a Sudoku constraint. In a standard Sudoku,
 // this is either:
@@ -89,6 +90,15 @@ Constraint.prototype.relinkIntoConstraintList = function() {
   this.getPrev()._next = this;
   this.getNext()._prev = this;
 };
+
+// Links this constraint into the constraint list at a specified position
+// (when manually removing a solution)
+Constraint.prototype.linkIntoConstraintListAt = function(cIns) {
+  this._prev = cIns.getPrev();
+  this._next = cIns;
+  cIns.getPrev()._next = this;
+  cIns._prev = this;
+};
   
 // Adds a hit to this constraint's hit list (during puzzle setup)
 Constraint.prototype.addHit = function(hit) {
@@ -107,6 +117,13 @@ Constraint.prototype.unlinkHit = function(hit) {
 Constraint.prototype.relinkHit = function(hit) {
   hit.relinkIntoConstraint();
   this._len++;
+};
+
+// Empties the constraint's hit list.
+Constraint.prototype.clearHits = function() {
+  // Just create a new head node that points to the constraint,
+  // with up and down pointer pointing to itself.
+  this._head = new Hit(this.getHead());
 };
 
 // Returns true if the candidates that hit this constraint are

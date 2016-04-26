@@ -14,6 +14,7 @@ module.exports = {
     this.dispatch(ActionTypes.REMOVE_CANDIDATE, {hit: hit});
   },
 
+  // to be used for backtracking/undo only - otherwise use toggleCandidate
   restoreCandidate: function(hit) {
     this.dispatch(ActionTypes.RESTORE_CANDIDATE, {hit: hit});
   },
@@ -42,8 +43,8 @@ module.exports = {
     });
   },
 
-  removeSolution: function(row, col) {
-    this.dispatch(ActionTypes.REMOVE_SOLUTION, {row: row, col: col});
+  clearCell: function(row, col) {
+    this.dispatch(ActionTypes.CLEAR_CELL, { row: row, col: col });
   },
 
   //////// play controller updates
@@ -69,11 +70,12 @@ module.exports = {
     this.dispatch(ActionTypes.UNSELECT_CELL, {});
   },
 
-  setDigitMode: function(digitMode) {
-    this.dispatch(ActionTypes.SET_DIGIT_MODE, {digitMode: digitMode});
+  setEntryMode: function(entryMode) {
+    this.dispatch(ActionTypes.SET_ENTRY_MODE, {entryMode: entryMode});
   },
 
-  clearCell: function(row, col) {
-    this.dispatch(ActionTypes.CLEAR_CELL, { row: row, col: col });
+  setDigitMode: function(digitMode) {
+    this.dispatch(ActionTypes.SET_DIGIT_MODE, {digitMode: digitMode});
   }
+
 };

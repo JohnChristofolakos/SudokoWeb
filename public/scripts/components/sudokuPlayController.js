@@ -116,10 +116,14 @@ var ControllerFrame = React.createClass({
     for (var i = 1; i <= 9; i++) {
       var selected = false, selectedCandidate = false;
       if (this.props.entryMode === EntryMode.CELL_SELECTED) {
-        if ((this.props.cellSelected.isHinted || this.props.cellSelected.isSolved) &&
-            this.props.cellSelected.candidates[0] === i &&
-            this.props.digitMode === DigitMode.BIG_NUMBER) {
-          selected = true;
+        if ((this.props.cellSelected.isHinted || this.props.cellSelected.isSolved)) {
+          if (this.props.cellSelected.candidates[0] === i &&
+              this.props.digitMode === DigitMode.BIG_NUMBER) {
+            selected = true;
+          } else if (this.props.cellSelected.candidates[0] === i &&
+                     this.props.digitMode == DigitMode.CANDIDATE) {
+            selectedCandidate = true;
+          }
         }
         if (!this.props.cellSelected.isHinted && !this.props.cellSelected.isSolved &&
             this.props.cellSelected.candidates.indexOf(i) >= 0 &&
@@ -127,11 +131,14 @@ var ControllerFrame = React.createClass({
           selectedCandidate = true;
         }
       }
-      else {
+      else if (this.props.entryMode === EntryMode.DIGIT_SELECTED) {
         selected = this.props.digitMode === DigitMode.BIG_NUMBER &&
                    this.props.digitSelected === i;
         selectedCandidate = this.props.digitMode === DigitMode.CANDIDATE &&
                             this.props.digitSelected === i;
+      }
+      else if (this.props.entryMode === EntryMode.CLEAR) {
+        // no digits are ever selected in clear mode
       }
 
       digits[i] = <ControllerDigit
@@ -175,8 +182,9 @@ var ControllerFrame = React.createClass({
             </tr>
             <tr>
               <ControllerButton iconName="clear"
-                                enabled={true}
-                                selected={this.props.digitMode === DigitMode.CLEAR}
+                                enabled={this.props.entryMode !== EntryMode.CELL_SELECTED ||
+                                         !this.props.cellSelected.isHinted}
+                                selected={this.props.entryMode === EntryMode.CLEAR}
                                 selectedCandidate={false}
                                 onButtonClicked={this.props.onButtonClicked} />
               <ControllerButton iconName="redo"
@@ -256,6 +264,12 @@ var SudokuPlayController = React.createClass({
       }
       else if (this.state.playController.entryMode === EntryMode.CELL_SELECTED) {
         if (this.state.playController.digitMode === DigitMode.BIG_NUMBER) {
+          if (this.state.puzzle.cellSelected.isSolved &&
+              this.state.puzzle.cellSelected.candidates[0] !== digit) {
+            // switching the cell to a different solution, clear it first
+            this.getFlux().actions.clearCell(this.state.playController.cellRowSelected,
+                                             this.state.playController.cellColSelected);
+          }
           this.getFlux().actions.addSolution(
             this.state.playController.cellRowSelected,
             this.state.playController.cellColSelected,
@@ -280,27 +294,40 @@ var SudokuPlayController = React.createClass({
   },
 
   onCellClicked: function(row, col) {
-    if (this.state.playController.entryMode === EntryMode.CELL_SELECTED &&
-        this.state.playController.cellRowSelected === row &&
-        this.state.playController.cellColSelected === col) {
-      this.getFlux().actions.unselectCell();
-    }
-    else if (this.state.playController.entryMode === EntryMode.CELL_SELECTED ||
-             this.state.playController.entryMode === EntryMode.NONE) {
+    if (this.state.playController.entryMode === EntryMode.NONE) {
+      // in neutral state, so select the call that was clicked and go into cell-first mode
       this.getFlux().actions.selectCell(row, col);
     }
+    else if (this.state.playController.entryMode === EntryMode.CELL_SELECTED) {
+      // in cell-first mode, did we get a click on the selected cell?
+      if (this.state.playController.cellRowSelected === row &&
+          this.state.playController.cellColSelected === col) {
+        // yes, so unselect the cell and go back to netral mode
+        this.getFlux().actions.unselectCell();
+      } else {
+        // clicked on a different cell, so select it and stay in cell-first mode
+        this.getFlux().actions.selectCell(row, col);
+      }
+    }
     else if (this.state.playController.entryMode === EntryMode.DIGIT_SELECTED) {
+      // in digit-first mode, so we want to update the cell that was clicked
       if (this.state.playController.digitMode === DigitMode.BIG_NUMBER) {
+        // in big number mode, so set the digit as the solution for the cell
         this.getFlux().actions
             .addSolution(row, col, this.state.playController.digitSelected);
       }
       else if (this.state.playController.digitMode === DigitMode.CANDIDATE) {
+        // in candidate mode, so toggle the candidate digit
         this.getFlux().actions
             .toggleCandidate(row, col, this.state.playController.digitSelected);
       }
       else {
         console.log("Invalid digit mode " + this.state.playController.digitMode);
       }
+    }
+    else if (this.state.playController.entryMode === EntryMode.CLEAR) {
+      // clear the selected cell, stay in clear mode
+      this.getFlux().actions.clearCell(row, col);
     }
     else {
       console.log("Invalid entry mode " + this.state.playController.entryMode);
@@ -311,8 +338,7 @@ var SudokuPlayController = React.createClass({
     console.log("Button clicked: " + iconName);
 
     if (iconName === "create") {
-      if (this.state.playController.digitMode === DigitMode.BIG_NUMBER ||
-          this.state.playController.digitMode === DigitMode.CLEAR) {
+      if (this.state.playController.digitMode === DigitMode.BIG_NUMBER) {
         this.getFlux().actions.setDigitMode(DigitMode.CANDIDATE);
       }
       else {
@@ -321,15 +347,17 @@ var SudokuPlayController = React.createClass({
     }
     else if (iconName === "clear") {
       if (this.state.playController.entryMode === EntryMode.CELL_SELECTED) {
+        // clear the selected cell, stay in clear mode
         this.getFlux().actions.clearCell(this.state.playController.cellRowSelected,
-                                        this.state.playController.cellColSelected);
+                                         this.state.playController.cellColSelected);
       }
       else {
-        if (this.state.playController.digitMode === DigitMode.CLEAR) {
-          this.getFlux().actions.unselectDigit();
-          this.getFlux().actions.setDigitMode(DigitMode.BIG_NUMBER);
+        if (this.state.playController.entryMode === EntryMode.CLEAR) {
+          // go back to neutral mode
+          this.getFlux().actions.setEntryMode(EntryMode.NONE);
         } else {
-          this.getFlux().actions.setDigitMode(DigitMode.CLEAR);
+          // go into clear mode
+          this.getFlux().actions.setEntryMode(EntryMode.CLEAR);
         }
       }
     }

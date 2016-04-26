@@ -130,8 +130,9 @@ Puzzle.prototype.getActiveConstraints = function(lenFilter) {
   var list = [];
   
   for (var c = this.getRootConstraint().getNext();
-      c !== this.getRootConstraint();
-      c = c.getNext()) {
+           c !== this.getRootConstraint();
+           c = c.getNext()
+      ) {
     if (lenFilter === undefined || c.getLength() == lenFilter) {
       list.push(c);
     }
@@ -148,7 +149,8 @@ Puzzle.prototype.getEliminatedCandidates = function() {
 Puzzle.prototype.findConstraint = function(name) {
   for (var c = this.getRootConstraint().getNext();
            c !== this.getRootConstraint();
-           c = c.getNext()) {
+           c = c.getNext()
+      ) {
     if (c.getName() === name) {
       return c;
     }
@@ -165,7 +167,8 @@ Puzzle.prototype.findCandidate = function(name) {
 
     for (var c = this.getRootCandidate().getNext();
              c !== this.getRootCandidate();
-             c = c.getNext()) {
+             c = c.getNext()
+        ) {
       if (c.getRow() === row && c.getCol() === col && c.getDigit() === digit) {
         return c;
       }
@@ -204,7 +207,7 @@ Puzzle.prototype.findEliminatedCandidate = function(name) {
 // Unlinks this candidate from the candidates list
 Puzzle.prototype._unlinkCandidate = function(c) {
   if (c.constructor !== Candidate) {
-    throw new Error("Puzzle.unlinkCandidate: parameter should be Candidate");
+    throw new Error("Puzzle._unlinkCandidate: parameter should be Candidate");
   }
 
   c.unlinkFromCandidateList();
@@ -214,11 +217,57 @@ Puzzle.prototype._unlinkCandidate = function(c) {
 // Relinks this candidate into the candidates list
 Puzzle.prototype._relinkCandidate = function(c) {
   if (c.constructor !== Candidate) {
-    throw new Error("Puzzle.unlinkCandidate: parameter should be Candidate");
+    throw new Error("Puzzle._relinkCandidate: parameter should be Candidate");
   }
 
   c.relinkIntoCandidateList();
   this._candidateCount++;
+};
+
+Puzzle.prototype._linkCandidate = function(c) {
+  if (c.constructor !== Candidate) {
+    throw new Error("Puzzle._linkCandidate: parameter should be Candidate");
+  }
+
+  // step through the active candidates until we hit the first one with a number
+  // greater than this candidate, or we're back at the root candidate
+  for (var cIns = this._rootCandidate.getNext();
+           cIns != this._rootCandidate;
+           cIns = cIns.getNext()
+      ) {
+    if (c.getNum() < cIns.getNum()) {
+      // here's where it gets inserted, just before this one
+      break;
+    }
+  }
+
+  // link it into the candidate list at the spot that preserves the numbering
+  c.linkIntoCandidateListAt(cIns);
+  this._candidateCount++;
+};
+
+// Links a constraint back into the constraint list at the proper position
+// (but destroys the original link information needed by dancing links).
+Puzzle.prototype._linkConstraint = function(c) {
+  if (c.constructor !== Constraint) {
+    throw new Error("Puzzle._linkConstraint: parameter should be Constraint");
+  }
+
+  // step through the active constraints until we hit the first one with a number
+  // greater than this constraint, or we're back at the root constraint
+  for (var cIns = this._rootConstraint.getNext();
+           cIns != this._rootConstraint;
+           cIns = cIns.getNext()
+      ) {
+    if (c.getNum() < cIns.getNum()) {
+      // here's where it gets inserted, just before this one
+      break;
+    }
+  }
+
+  // link it into the constraint list at the spot that preserves the numbering
+  c.linkIntoConstraintListAt(cIns);
+  this._constraintCount++;
 };
 
 /////////////// mutating routines used during solving - all are reversible
@@ -240,16 +289,20 @@ Puzzle.prototype.cover = function(level, constraint) {
   // Remove all candidates that have a hit against this constraint,
   // one of them at a time will be tried as part of the solution set,
   // the others will conflict
-  for (var c = constraint.getHead().getDown();
-       c != constraint.getHead();
-       c = c.getDown()) {
-    for (var h = c.getRight(); h !== c; h = h.getRight()) {
+  for (var hit = constraint.getHead().getDown();
+           hit != constraint.getHead();
+           hit = hit.getDown()
+      ) {
+    for (var h = hit.getRight(); h !== hit; h = h.getRight()) {
       // unlink the hit from its constraint, and bump the update count
       h.getConstraint().unlinkHit(h);
     }
     
     // remove the candidate from the candidates list
-    this._unlinkCandidate(c.getCandidate());
+    this._unlinkCandidate(hit.getCandidate());
+
+    // push it onto the eliminated candidates list
+    this._eliminated.push(hit.getCandidate());
   }
 };
 
@@ -260,15 +313,16 @@ Puzzle.prototype.uncover = function(constraint) {
   if (constraint.constructor !== Constraint) {
     throw new Error("Puzzle.uncover: parameter should be Constraint");
   }
-  for (var c = constraint.getHead().getUp();
-       c !== constraint.getHead();
-       c = c.getUp()) {
-    for (var h = c.getLeft(); h != c; h = h.getLeft()) {
+  for (var hit = constraint.getHead().getUp();
+           hit !== constraint.getHead();
+           hit = hit.getUp()
+      ) {
+    for (var h = hit.getLeft(); h != hit; h = h.getLeft()) {
       h.getConstraint().relinkHit(h);
     }
     
     // add the candidate back into the candidates list
-    this._relinkCandidate(c.getCandidate());
+    this._relinkCandidate(hit.getCandidate());
   }
 
   // link the constraint back into the constraint list
@@ -313,7 +367,8 @@ Puzzle.prototype.eliminateCandidate = function(candidate) {
   do {
     h.getConstraint().unlinkHit(h);
     h = h.getRight();
-  } while (h !== candidate.getFirstHit());
+  }
+  while (h !== candidate.getFirstHit());
   
   // unlink the candidate from the candidates list
   this._unlinkCandidate(candidate);
@@ -353,59 +408,6 @@ Puzzle.prototype.restoreCandidate = function() {
   return c;
 };
 
-// Adds a candidate to the diagram manually, as directed by the human solver.
-//
-// The parameter is the original candidate, which must have been manually
-// eliminated and not in conflict with any solved/hinted cells.
-//
-// Returns the new candidate that was created and added.
-//
-Puzzle.prototype.addManualCandidate = function(c) {
-  if (c.constructor !== Candidate) {
-    throw new Error("Puzzle.addManualCandidate: parameter should be Candidate");
-  }
-
-  // double check it is OK to add this candidate all of its hits must be
-  // against active constraints
-  var activeConstraints = this.getActiveConstraints();
-  var h = c.getFirstHit();
-  do {
-    if (activeConstraints.find(c => c === h.getConstraint()) === undefined) {
-      console.log("Attempted to add conflicting candidate at row " + c.getRow() +
-                  ", col " + c.getCol() + ", digit " + c.getDigit());
-      return undefined;
-    }
-
-    h = h.getRight();
-  }
-  while (h !== c.getFirstHit());
-
-  // create a copy of the candidate
-  var newCandidate = new Candidate(c.getRow(), c.getCol(), c.getDigit(), c.getDisplayName());
-
-  // link the new candidate into the candidates list
-  newCandidate.addToCandidateList(this._rootCandidate);
-  this._candidateCount++;
-  
-  // loop through the old candidate's constraints
-  h = c.getFirstHit();
-  do {
-    // add a hit for the candidate against this constraint
-    var newHit = new Hit();
-    
-    // add the new hit to the new candidate's list
-    newCandidate.addHit(newHit);
-
-    // add the new hit to the constraint's list
-    h.getConstraint().addHit(newHit);
-
-    h = h.getRight();
-  }
-  while (h !== c.getFirstHit());
-
-  return newCandidate;
-};
-
 // Pushes a candidate onto the solution list (possibly tentatively), and
 // notifies the dispatcher
 Puzzle.prototype.pushSolution = function(hit) {
@@ -434,12 +436,88 @@ Puzzle.prototype.solve = function(level, hit) {
   this.pushSolution(hit);
 };
 
-// convenience method to wrap popSolution, uncoverNodeColumns and uncover
+// Convenience method to wrap popSolution, uncoverNodeColumns and uncover
+// To be used only for backtracking/undo, not to manually remove a solution
 Puzzle.prototype.unsolve = function() {
   var hit = this.popSolution();
   this.uncoverHitConstraints(hit);
   this.uncover(hit.getConstraint());
   return hit;
+};
+
+// Adds the specified candidate to the diagram manually, e.g. as directed by a
+// human solver. The candidate is checked to be not in conflict with any solved
+// or hinted cells, if it is then nothing is done.
+//
+// Note this operation cannot be reversed using the 'dancing links' approach.
+//
+Puzzle.prototype.manuallyAddCandidate = function(c) {
+  if (c.constructor !== Candidate) {
+    throw new Error("Puzzle.manuallyAddCandidate: parameter should be Candidate");
+  }
+
+  // double check it is OK to add this candidate - all of its hits must be
+  // against active constraints
+  var activeConstraints = this.getActiveConstraints();
+  var h = c.getFirstHit();
+  do {
+    if (activeConstraints.find(c => c === h.getConstraint()) === undefined) {
+      console.log("Attempted to manually add conflicting candidate at row " + c.getRow() +
+                  ", col " + c.getCol() + ", digit " + c.getDigit());
+      return undefined;
+    }
+
+    h = h.getRight();
+  }
+  while (h !== c.getFirstHit());
+
+  // looks good, relink the candidate back into the candidate's list
+  this._linkCandidate(c);
+
+  // then add the candidate's hits back into their constraints
+  h = c.getFirstHit();
+  do {
+    h.getConstraint().addHit(h);
+
+    h = h.getRight();
+  }
+  while (h !== c.getFirstHit());
+
+  // remove the candidate from the eliminated list
+  var i = this._eliminated.findIndex(c => c === c);
+  if (i >= 0) {
+    this._eliminated.splice(i, 1);
+  }
+  else {
+    console.log("Could not remove manually added candidate from the eliminated list " + c.getName());
+  }
+};
+
+// Removes a previously solved cell from the solution by putting all of its covered
+// constraints back into the active constraint list. The cell will have no candidates
+// after this operation is complete, and all of the restored constraints will have
+// empty hit lists.
+//
+// Note this operation cannot be reversed using the 'dancing links' approach.
+//
+Puzzle.prototype.manuallyRemoveSolution = function(c) {
+  if (c.constructor !== Candidate) {
+    throw new Error("Puzzle.manuallyRemoveSolution: parameter should be Candidate");
+  }
+
+  // loop through the solved candidate's hits
+  var h = c.getFirstHit();
+  do {
+    // relink the hit's constraints into the constraint list
+    this._linkConstraint(h.getConstraint());
+
+    // but empty each constraint's hit list, they'll be repopulated as possible
+    // candidates are added back
+    h.getConstraint().clearHits();
+
+    h = h.getRight();
+  }
+  while (h != c.getFirstHit());
 };
 
 //////////////// initial diagram setup
@@ -637,6 +715,43 @@ Puzzle.prototype.setCandidate = function(board, row, col, digit) {
   var colOffs = (digit - 1) % 3;
   
   board[row*4 + rowOffs][col*6 + colOffs] = "" + digit;
+};
+
+Puzzle.prototype.dumpToConsole = function() {
+  console.log("Constraints:");
+  for (var c = this.getRootConstraint().getNext(); c != this.getRootConstraint(); c = c.getNext()) {
+    var hitNames = "";
+    for (var h = c.getHead().getDown(); h != c.getHead(); h = h.getDown()) {
+      hitNames += h.getCandidate().getName() + " ";
+    }
+    console.log("  " + c.getName() + " (" + c.getNum() + ") " + hitNames);
+  }
+
+  console.log("Candidates:");
+  this.getActiveCandidates().map(c => {
+    hitNames = "";
+    h = c.getFirstHit();
+    do {
+      hitNames += h.getConstraint().getName() + " ";
+      h = h.getRight();
+    }
+    while (h !== c.getFirstHit());
+
+    console.log("  " + c.getName() + " " + hitNames);
+  });
+
+  console.log("Eliminated candidates:");
+  this._eliminated.map(c => {
+    hitNames = "";
+    h = c.getFirstHit();
+    do {
+      hitNames += h.getConstraint().getName() + " ";
+      h = h.getRight();
+    }
+    while (h !== c.getFirstHit());
+
+    console.log("  " + c.getName() + " " + hitNames);
+  });
 };
 
 module.exports = Puzzle;
