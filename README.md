@@ -4,15 +4,20 @@ This is a port of my SudokuSolver project from a JavaFX desktop application to a
 Also a work in progress, currently this has:
 * a model layer with comprehensive unit tests;
 * an HTML rendering layer that is driven by flux;
-* a puzzle initialisation routine that just sets up a hard-coded puzzle.
+* a puzzle initialisation routine that just sets up a hard-coded puzzle;
+* a playable controller for manually solving the puzzle.
 
 Major todos:
-* add a controller to allow manual solving
+* finish the controller to allow manual solving - still needs undo/redo, check, and a play timer
+* test suites for the flux stores
+* kick up the UX a notch with some tactile effects, sounds, and a little splash when the puzzle is solved would be nice :)
 * migrate the logical solver and its controller from the Java app
-* implement REST/JSON to retrieve puzzle from the server
+* implement a means to retrieve puzzles from the server
 
 The project uses node, npm, React, babel with react and es2015 plugins, jest, CommonJS modularisation. My first significant JavaScript project so reviewers should please treat it kindly :)
 
-Here is a screenshot of a hinted grid.
+It hasn't been deployed to a permanent home yet, but a reasonablt stable version is usually available at [johnc.onl](http://johnc.onl)
 
-![Hinted grid](screenshot.png?raw=true)
+Here is a screenshot of an in-progress puzzle.
+
+![Solving a puzzle](screenshot.png?raw=true)
