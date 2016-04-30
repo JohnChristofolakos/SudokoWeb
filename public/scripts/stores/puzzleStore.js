@@ -14,6 +14,8 @@ var PuzzleStore = Fluxxor.createStore({
       sudokuActionTypes.RESTORE_CANDIDATE, this.onRestoreCandidate,
       sudokuActionTypes.SOLVE_CELL, this.onSolveCell,
       sudokuActionTypes.UNSOLVE, this.onUnsolve,
+      sudokuActionTypes.PUZZLE_UNDO, this.puzzleUndo,
+      sudokuActionTypes.PUZZLE_REDO, this.puzzleRedo,
 
       sudokuActionTypes.SELECT_CELL, this.onSelectCell,
       sudokuActionTypes.UNSELECT_CELL, this.onUnselectCell,
@@ -160,21 +162,43 @@ var PuzzleStore = Fluxxor.createStore({
     });
   },
 
+  // return true if the action was successful
   toggleCandidate: function(row, col, digit) {
+    if (this.solution.has(Candidate.makeCellId(row, col)) ||
+        this.hints.has(Candidate.makeCellId(row, col))) {
+      console.log("Attempted to toggle candidate " + digit +
+                 " in hinted cell at row " + row + ", col " + col);
+      return false;
+    }
+
     // is it currently a candidate?
     var c = this.puzzle.findCandidate(row, col, digit);
     if (c !== undefined) {
-      this.puzzle.eliminateCandidate(c);
+      // yes, eliminate it from the puzzle
+      if (!this.puzzle.eliminateCandidate(c)) {
+        return false;
+      }
+
+      // and update the candidates state if it succeeded
+      this.candidates = this.candidates.delete(c.getName());
+      return true;
     }
     else {
       c = this.puzzle.findEliminatedCandidate(row, col, digit);
       if (c === undefined) {
         console.log("Attempted to restore invalid candidate at row " +
              row + ", col " + col + ", digit " + digit);
-        return;
+        return false;
       }
 
-      this.puzzle.manuallyAddCandidate(c);
+      // add it back into the puzzle
+      if (!this.puzzle.manuallyAddCandidate(c)) {
+        return false;
+      }
+
+      // and update the candidates state
+      this.candidates = this.candidates.set(c.getName(), c);
+      return true;
     }
   },
 
@@ -194,8 +218,11 @@ var PuzzleStore = Fluxxor.createStore({
   },
 
   onRemoveCandidate: function(payload) {
-    this.puzzle.eliminateCandidate(payload.hit);
+    // update the puzzle
+    if (!this.puzzle.eliminateCandidate(payload.hit))
+      return;
 
+    // update our state
     this.candidates = this.candidates.delete(payload.hit.getCandidate().getName());
 
     this.emit("change");
@@ -214,17 +241,17 @@ var PuzzleStore = Fluxxor.createStore({
   },
 
   onSolveCell: function(payload) {
-    this.puzzle.solve(0, payload.hit);
+    if (this.puzzle.solve(0, payload.hit)) {
+      this.solution = this.solution.set(
+          payload.hit.getCandidate().getCellId(),
+          payload.hit.getCandidate()
+      );
 
-    this.solution = this.solution.set(
-        payload.hit.getCandidate().getCellId(),
-        payload.hit.getCandidate()
-    );
+      this.candidates = Map(this.puzzle.getActiveCandidates()
+          .map(c => { return [ c.getName(), c ]; } ));
 
-    this.candidates = Map(this.puzzle.getActiveCandidates()
-        .map(c => { return [ c.getName(), c ]; } ));
-
-    this.emit("change");
+      this.emit("change");
+    }
   },
 
   // for backtracking/undo only - otherwise use onClearCell
@@ -289,11 +316,13 @@ var PuzzleStore = Fluxxor.createStore({
       console.log("Attempted to add invalid solution at row " + payload.row +
                   ", col" + payload.col + ", digit " + payload.digit);
     }
-    this.onSolveCell({ hit: c.getFirstHit() });
+    else {
+      this.onSolveCell({ hit: c.getFirstHit() });
 
-    this.buildSelectedCell();
+      this.buildSelectedCell();
 
-    this.emit("change");
+      this.emit("change");
+    }
   },
 
   onClearCell: function(payload) {
@@ -307,9 +336,12 @@ var PuzzleStore = Fluxxor.createStore({
     var c = this.solution.get(Candidate.makeCellId(payload.row, payload.col));
     if (c !== undefined) {
       // solved, so manually remove the solution
-      this.puzzle.manuallyRemoveSolution(c);
+      if (!this.puzzle.manuallyRemoveSolution(c)) {
+        // if it failed, then just ignore the click
+        return;
+      }
 
-      /// and update the solution state
+      // and update the solution state
       this.solution = this.solution.delete(Candidate.makeCellId(payload.row, payload.col));
     }
 
@@ -321,18 +353,27 @@ var PuzzleStore = Fluxxor.createStore({
                                        c.getCol() === payload.col &&
                                        c.getDigit() === digit
                                  )) {
-          this.toggleCandidate(payload.row, payload.col, digit);
+          if (!this.toggleCandidate(payload.row, payload.col, digit)) {
+            console.log("Could not toggle candidate " + digit +
+                        " at row " + payload.row + ", col " + payload.col +
+                         " during clear operation");
+            // but carry on as best we can
+          }
         }
       }
     }
 
-    // rebuild the candidates map
-    this.candidates = Map(this.puzzle.getActiveCandidates()
-        .map(c => { return [ c.getName(), c ]; } ));
-
     this.buildSelectedCell();
 
     this.emit("change");
+  },
+
+  puzzleUndo: function() {
+    // TODO
+  },
+
+  puzzleRedo: function() {
+    // TODO
   }
 
 });

@@ -357,6 +357,8 @@ Puzzle.prototype.uncoverHitConstraints = function(hit) {
 // Removes a candidate that has been eliminated by the logical
 // solver or by the user.
 //
+// Returns true if the operation succeeded (which it always should)
+//
 Puzzle.prototype.eliminateCandidate = function(candidate) {
   if (candidate.constructor !== Candidate) {
     throw new Error("Puzzle.eliminateCandidate: parameter should be Candidate");
@@ -425,15 +427,34 @@ Puzzle.prototype.popSolution = function() {
   return hit;
 };
 
-// convenience method to wrap cover, coverNodeColumns and pushSolution
+// Convenience method to wrap cover, coverNodeColumns and pushSolution, returns true
+// if the solution is valid (doesn't conflict with other solver/hinted cells)
 Puzzle.prototype.solve = function(level, hit) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.solve: parameter should be Hit");
   }
 
+  // double check it is OK to solve this candidate - all of its hits must be
+  // against active constraints
+  var c = hit.getCandidate();
+  var activeConstraints = this.getActiveConstraints();
+  var h = c.getFirstHit();
+  do {
+    if (activeConstraints.find(c => c === h.getConstraint()) === undefined) {
+      console.log("Attempted to solve with conflicting candidate at row " + c.getRow() +
+                  ", col " + c.getCol() + ", digit " + c.getDigit());
+      return false;
+    }
+
+    h = h.getRight();
+  }
+  while (h !== c.getFirstHit());
+
   this.cover(level, hit.getConstraint());
   this.coverHitConstraints(level, hit);
   this.pushSolution(hit);
+
+  return true;
 };
 
 // Convenience method to wrap popSolution, uncoverNodeColumns and uncover
@@ -451,6 +472,8 @@ Puzzle.prototype.unsolve = function() {
 //
 // Note this operation cannot be reversed using the 'dancing links' approach.
 //
+// Returns true if the operation succeeded.
+//
 Puzzle.prototype.manuallyAddCandidate = function(c) {
   if (c.constructor !== Candidate) {
     throw new Error("Puzzle.manuallyAddCandidate: parameter should be Candidate");
@@ -464,7 +487,7 @@ Puzzle.prototype.manuallyAddCandidate = function(c) {
     if (activeConstraints.find(c => c === h.getConstraint()) === undefined) {
       console.log("Attempted to manually add conflicting candidate at row " + c.getRow() +
                   ", col " + c.getCol() + ", digit " + c.getDigit());
-      return undefined;
+      return false;
     }
 
     h = h.getRight();
@@ -490,7 +513,10 @@ Puzzle.prototype.manuallyAddCandidate = function(c) {
   }
   else {
     console.log("Could not remove manually added candidate from the eliminated list " + c.getName());
+    // but return true anyway as we did update the puzzle's candidates
   }
+
+  return true;
 };
 
 // Removes a previously solved cell from the solution by putting all of its covered
@@ -499,6 +525,8 @@ Puzzle.prototype.manuallyAddCandidate = function(c) {
 // empty hit lists.
 //
 // Note this operation cannot be reversed using the 'dancing links' approach.
+//
+// Returns true if the operation succeeded (which it always should).
 //
 Puzzle.prototype.manuallyRemoveSolution = function(c) {
   if (c.constructor !== Candidate) {
@@ -518,6 +546,8 @@ Puzzle.prototype.manuallyRemoveSolution = function(c) {
     h = h.getRight();
   }
   while (h != c.getFirstHit());
+
+  return true;
 };
 
 //////////////// initial diagram setup

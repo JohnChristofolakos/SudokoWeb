@@ -47,6 +47,14 @@ module.exports = {
     this.dispatch(ActionTypes.CLEAR_CELL, { row: row, col: col });
   },
 
+  puzzleUndo: function() {
+    this.dispatch(ActionTypes.PUZZLE_UNDO, {});
+  },
+
+  puzzleRedo: function() {
+    this.dispatch(ActionTypes.PUZZLE_REDO, {});
+  },
+
   //////// play controller updates
 
   selectDigit: function(digit) {

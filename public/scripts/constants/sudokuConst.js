@@ -10,6 +10,8 @@ var sudokuActionTypes = keyMirror({
   TOGGLE_CANDIDATE: null,
   ADD_SOLUTION: null,
   CLEAR_CELL: null,
+  PUZZLE_UNDO: null,
+  PUZZLE_REDO: null,
   
   // play controller updates
   SELECT_CELL: null,
