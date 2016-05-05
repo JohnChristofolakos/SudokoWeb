@@ -107,6 +107,8 @@ var ControllerFrame = React.createClass({
     cellSelected: React.PropTypes.object.isRequired,
     entryMode: React.PropTypes.string.isRequired,
     digitMode: React.PropTypes.string.isRequired,
+    undoAvailable: React.PropTypes.bool.isRequired,
+    redoAvailable: React.PropTypes.bool.isRequired,
     onDigitClicked: React.PropTypes.func.isRequired,
     onButtonClicked: React.PropTypes.func.isRequired
   },
@@ -170,7 +172,7 @@ var ControllerFrame = React.createClass({
                                 selectedCandidate={this.props.digitMode === DigitMode.CANDIDATE}
                                 onButtonClicked={this.props.onButtonClicked} />
               <ControllerButton iconName="undo"
-                                enabled={false}
+                                enabled={this.props.undoAvailable}
                                 selected={false}
                                 selectedCandidate={false}
                                 onButtonClicked={this.props.onButtonClicked} />
@@ -188,7 +190,7 @@ var ControllerFrame = React.createClass({
                                 selectedCandidate={false}
                                 onButtonClicked={this.props.onButtonClicked} />
               <ControllerButton iconName="redo"
-                                enabled={false}
+                                enabled={this.props.redoAvailable}
                                 selected={false}
                                 selectedCandidate={false}
                                 onButtonClicked={this.props.onButtonClicked} />
@@ -239,6 +241,8 @@ var SudokuPlayController = React.createClass({
           digitMode={this.state.playController.digitMode}
           clearMode={this.state.playController.clearMode}
           cellSelected={this.state.puzzle.cellSelected}
+          undoAvailable={this.state.puzzle.undoAvailable}
+          redoAvailable={this.state.puzzle.redoAvailable}
           onDigitClicked={this.onDigitClicked}
           onButtonClicked={this.onButtonClicked}
         />
@@ -360,6 +364,12 @@ var SudokuPlayController = React.createClass({
           this.getFlux().actions.setEntryMode(EntryMode.CLEAR);
         }
       }
+    }
+    else if (iconName === "undo") {
+      this.getFlux().actions.puzzleUndo();
+    }
+    else if (iconName === "redo") {
+      this.getFlux().actions.puzzleRedo();
     }
   }
 

@@ -10,23 +10,6 @@ module.exports = {
     this.dispatch(ActionTypes.SET_PUZZLE, {puzzle: puzzle});
   },
 
-  removeCandidate: function(hit) {
-    this.dispatch(ActionTypes.REMOVE_CANDIDATE, {hit: hit});
-  },
-
-  // to be used for backtracking/undo only - otherwise use toggleCandidate
-  restoreCandidate: function(hit) {
-    this.dispatch(ActionTypes.RESTORE_CANDIDATE, {hit: hit});
-  },
-
-  solveCell: function(hit) {
-    this.dispatch(ActionTypes.SOLVE_CELL, {hit: hit});
-  },
-
-  unsolve: function() {
-    this.dispatch(ActionTypes.UNSOLVE, {});
-  },
-
   toggleCandidate: function(row, col,  digit) {
     this.dispatch(ActionTypes.TOGGLE_CANDIDATE, {
       row: row,

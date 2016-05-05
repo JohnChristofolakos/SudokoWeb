@@ -21,20 +21,19 @@ var PlayControllerStore = Fluxxor.createStore({
 
     this.bindActions(
       sudokuActionTypes.SET_PUZZLE, this.onSetPuzzle,
-      sudokuActionTypes.REMOVE_CANDIDATE, this.onPuzzleUpdate,
-      sudokuActionTypes.RESTORE_CANDIDATE, this.onPuzzleUpdate,
-      sudokuActionTypes.SOLVE_CELL, this.onPuzzleUpdate,
-      sudokuActionTypes.UNSOLVE, this.onPuzzleUpdate,
+      sudokuActionTypes.TOGGLE_CANDIDATE, this.onPuzzleUpdate,
+      sudokuActionTypes.ADD_SOLUTION, this.onPuzzleUpdate,
+      sudokuActionTypes.CLEAR_CELL, this.onPuzzleUpdate,
+
+      sudokuActionTypes.PUZZLE_UNDO, this.onPuzzleUpdate,
+      sudokuActionTypes.PUZZLE_REDO, this.onPuzzleUpdate,
 
       sudokuActionTypes.SELECT_CELL, this.onSelectCell,
       sudokuActionTypes.UNSELECT_CELL, this.onUnselectCell,
       sudokuActionTypes.SELECT_DIGIT, this.onSelectDigit,
       sudokuActionTypes.UNSELECT_DIGIT, this.onUnselectDigit,
       sudokuActionTypes.SET_ENTRY_MODE, this.onSetEntryMode,
-      sudokuActionTypes.SET_DIGIT_MODE, this.onSetDigitMode,
-      sudokuActionTypes.TOGGLE_CANDIDATE, this.onPuzzleUpdate,
-      sudokuActionTypes.ADD_SOLUTION, this.onPuzzleUpdate,
-      sudokuActionTypes.CLEAR_CELL, this.onPuzzleUpdate
+      sudokuActionTypes.SET_DIGIT_MODE, this.onSetDigitMode
     );
   },
 

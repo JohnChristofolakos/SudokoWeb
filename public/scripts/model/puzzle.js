@@ -204,7 +204,9 @@ Puzzle.prototype.findEliminatedCandidate = function(name) {
 
 ////////////////// private for use by the mutating routines below
 
-// Unlinks this candidate from the candidates list
+// Unlinks this candidate from the candidates list, can be undone by
+// _relinkCandidate if the candidate list has not otherwise been changed.
+//
 Puzzle.prototype._unlinkCandidate = function(c) {
   if (c.constructor !== Candidate) {
     throw new Error("Puzzle._unlinkCandidate: parameter should be Candidate");
@@ -214,7 +216,10 @@ Puzzle.prototype._unlinkCandidate = function(c) {
   this._candidateCount--;
 };
 
-// Relinks this candidate into the candidates list
+// Relinks this candidate into the candidates list after it was _unlinked. The
+// restof the candidates list must be in the same state as when the _unlink was
+// done.
+//
 Puzzle.prototype._relinkCandidate = function(c) {
   if (c.constructor !== Candidate) {
     throw new Error("Puzzle._relinkCandidate: parameter should be Candidate");
@@ -224,6 +229,9 @@ Puzzle.prototype._relinkCandidate = function(c) {
   this._candidateCount++;
 };
 
+
+// Links the candidate into the proper place on the candidates list, used
+// when _relink is not allowed.
 Puzzle.prototype._linkCandidate = function(c) {
   if (c.constructor !== Candidate) {
     throw new Error("Puzzle._linkCandidate: parameter should be Candidate");
@@ -246,8 +254,8 @@ Puzzle.prototype._linkCandidate = function(c) {
   this._candidateCount++;
 };
 
-// Links a constraint back into the constraint list at the proper position
-// (but destroys the original link information needed by dancing links).
+// Links a constraint back into the constraint list at the proper position,
+// used when uncover is not allowed.
 Puzzle.prototype._linkConstraint = function(c) {
   if (c.constructor !== Constraint) {
     throw new Error("Puzzle._linkConstraint: parameter should be Constraint");
@@ -276,11 +284,14 @@ Puzzle.prototype._linkConstraint = function(c) {
 // constraint that is being covered. Thus a hit is never removed from a list
 // twice.
 //
-// Returns number of hit updates performed
-Puzzle.prototype.cover = function(level, constraint) {
+// Returns an array containing the candidates that were removed.
+//
+Puzzle.prototype.cover = function(constraint) {
   if (constraint.constructor !== Constraint) {
     throw new Error("Puzzle.cover: parameter should be Constraint");
   }
+
+  var eliminatedCandidates = [];
 
   // unlink the constraint from the constraint list
   constraint.unlinkFromConstraintList();
@@ -303,16 +314,25 @@ Puzzle.prototype.cover = function(level, constraint) {
 
     // push it onto the eliminated candidates list
     this._eliminated.push(hit.getCandidate());
+    eliminatedCandidates.push(hit.getCandidate());
   }
+
+  return eliminatedCandidates;
 };
 
 // "Uncovering is done in precisely the reverse order. The pointers thereby
 // execute an exquisitely choreographed dance which returns them almost
 // magically to their former state."  - D. Knuth
+//
+// Returns an array containing the candidates that were relinked.
+//
 Puzzle.prototype.uncover = function(constraint) {
   if (constraint.constructor !== Constraint) {
     throw new Error("Puzzle.uncover: parameter should be Constraint");
   }
+
+  var relinkedCandidates = [];
+
   for (var hit = constraint.getHead().getUp();
            hit !== constraint.getHead();
            hit = hit.getUp()
@@ -323,35 +343,56 @@ Puzzle.prototype.uncover = function(constraint) {
     
     // add the candidate back into the candidates list
     this._relinkCandidate(hit.getCandidate());
+
+    // push it onto the 'relinked' list
+    relinkedCandidates.push(hit.getCandidate());
   }
 
   // link the constraint back into the constraint list
   constraint.relinkIntoConstraintList();
   this._constraintCount++;
+
+  return relinkedCandidates;
 };
 
 // Covers all the constraints covered by this hit's candidate, excepting
 // the constraint covered by this hit itself.
-Puzzle.prototype.coverHitConstraints = function(level, hit) {
+//
+// Returns a list of the candidates eliminated.
+//
+Puzzle.prototype.coverHitConstraints = function(hit) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.coverHitConstraints: parameter should be Hit");
   }
+
+  var eliminatedCandidates = [];
+
   for (var h = hit.getRight(); h !== hit; h = h.getRight()) {
-    this.cover(level, h.getConstraint());
+    this.cover(h.getConstraint()).forEach(c => eliminatedCandidates.push(c));
   }
+
+  return eliminatedCandidates;
 };
 
 // "We included left links, thereby making the rows doubly linked, so
 // that constraints would be uncovered in the correct LIFO order in this
 // part of the program. (The uncover routine itself could have done its
 // job with right links only.) (Think about it.)"  - D.Knuth
+//
+// Returns an array containing the candidates that were relinked.
+//
 Puzzle.prototype.uncoverHitConstraints = function(hit) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.uncoverHitConstraints: parameter should be Hit");
   }
+
+  var relinkedCandidates = [];
+
   for (var h = hit.getLeft(); h !== hit; h = h.getLeft()) {
-    this.uncover(h.getConstraint());
+    this.uncover(h.getConstraint()).forEach(c => relinkedCandidates.push(c));
   }
+
+  return relinkedCandidates;
 };
 
 // Removes a candidate that has been eliminated by the logical
@@ -377,6 +418,8 @@ Puzzle.prototype.eliminateCandidate = function(candidate) {
 
   // push it onto the eliminated candidates list
   this._eliminated.push(candidate);
+
+  return true;
 };
 
 // Restores a candidate that was eliminated by the logical solver
@@ -410,8 +453,7 @@ Puzzle.prototype.restoreCandidate = function() {
   return c;
 };
 
-// Pushes a candidate onto the solution list (possibly tentatively), and
-// notifies the dispatcher
+// Pushes a candidate onto the solution list (possibly tentatively).
 Puzzle.prototype.pushSolution = function(hit) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.pushSolution: parameter should be Hit");
@@ -421,15 +463,17 @@ Puzzle.prototype.pushSolution = function(hit) {
 };
 
 // Pops the last candidate off the solution list (during backtracking/undo)
-// and notifies the dispatcher
 Puzzle.prototype.popSolution = function() {
   var hit = this._solution.pop();
   return hit;
 };
 
 // Convenience method to wrap cover, coverNodeColumns and pushSolution, returns true
-// if the solution is valid (doesn't conflict with other solver/hinted cells)
-Puzzle.prototype.solve = function(level, hit) {
+// if the solution is valid (doesn't conflict with other solver/hinted cells).
+//
+// Adds candidates eliminated by the solved cell to the eliminatedCandidates array.
+//
+Puzzle.prototype.solve = function(hit, eliminatedCandidates) {
   if (hit.constructor !== Hit) {
     throw new Error("Puzzle.solve: parameter should be Hit");
   }
@@ -450,8 +494,8 @@ Puzzle.prototype.solve = function(level, hit) {
   }
   while (h !== c.getFirstHit());
 
-  this.cover(level, hit.getConstraint());
-  this.coverHitConstraints(level, hit);
+  this.cover(hit.getConstraint()).forEach(c => eliminatedCandidates.push(c));
+  this.coverHitConstraints(hit).forEach(c => eliminatedCandidates.push(c));
   this.pushSolution(hit);
 
   return true;
@@ -459,10 +503,14 @@ Puzzle.prototype.solve = function(level, hit) {
 
 // Convenience method to wrap popSolution, uncoverNodeColumns and uncover
 // To be used only for backtracking/undo, not to manually remove a solution
-Puzzle.prototype.unsolve = function() {
+//
+// Adds candidates that are relinked to the relinkedCandidates array. Returns
+// the solution hit that was popped.
+//
+Puzzle.prototype.unsolve = function(relinkedCandidates) {
   var hit = this.popSolution();
-  this.uncoverHitConstraints(hit);
-  this.uncover(hit.getConstraint());
+  this.uncoverHitConstraints(hit).forEach(c => relinkedCandidates.push(c));
+  this.uncover(hit.getConstraint()).forEach(c => relinkedCandidates.push(c));
   return hit;
 };
 
@@ -550,7 +598,7 @@ Puzzle.prototype.manuallyRemoveSolution = function(c) {
   return true;
 };
 
-//////////////// initial diagram setup
+//////////////// initial puzzle setup
 
 /// Adds a constraint to the puzzle, returns the new Constraint instance.
 Puzzle.prototype.addConstraint = function(name, unitType, unitName) {
@@ -622,8 +670,8 @@ Puzzle.prototype.addHint = function(candidateName) {
   }
 
   // pick any hit in the row, and cover it
-  this.cover(0, candidate.getFirstHit().getConstraint());
-  this.coverHitConstraints(0, candidate.getFirstHit());
+  this.cover(candidate.getFirstHit().getConstraint());
+  this.coverHitConstraints(candidate.getFirstHit());
       
   // remember the hints for printing later
   this._hints.push(candidate);

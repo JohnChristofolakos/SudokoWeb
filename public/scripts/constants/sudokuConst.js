@@ -3,10 +3,6 @@ var keyMirror = require("keymirror");
 var sudokuActionTypes = keyMirror({
   // grid content updates
   SET_PUZZLE: null,
-  REMOVE_CANDIDATE: null,
-  RESTORE_CANDIDATE: null,
-  SOLVE_CELL: null,
-  UNSOLVE: null,
   TOGGLE_CANDIDATE: null,
   ADD_SOLUTION: null,
   CLEAR_CELL: null,
