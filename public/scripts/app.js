@@ -2,6 +2,10 @@ var React = require("react");
 var ReactDOM = require("react-dom");
 var Fluxxor = require("fluxxor");
 
+import injectTapEventPlugin from "react-tap-event-plugin";
+import getMuiTheme from "material-ui/styles/getMuiTheme";
+import MuiThemeProvider from "material-ui/styles/MuiThemeProvider";
+
 var SudokuApp = require("./components/sudokuApp");
 var Puzzle = require("./model/puzzle.js");
 var PuzzleStore = require("./stores/puzzleStore.js");
@@ -11,6 +15,7 @@ var PuzzleReader = require("./io/puzzleReader.js");
 var sudokuActions = require("./actions/sudokuActions.js");
 
 window.React = React;
+injectTapEventPlugin();
 
 // setup flux
 var stores = {
@@ -59,7 +64,10 @@ flux.actions.setPuzzle(puzzle);
 if (console && console.log) {
   console.log("Rendering app");
 }
+
 ReactDOM.render(
-  <SudokuApp flux={flux}/>,
+  <MuiThemeProvider muiTheme={getMuiTheme()}>
+    <SudokuApp flux={flux} />
+  </MuiThemeProvider>,
   document.getElementById("sudokuApp")
 );

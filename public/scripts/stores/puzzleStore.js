@@ -246,6 +246,8 @@ var PuzzleStore = Fluxxor.createStore({
   },
 
   onSetPuzzle: function(payload) {
+    this.clearState();
+
     this.puzzle = payload.puzzle;
 
     this.candidates = Map(this.puzzle.getActiveCandidates()
